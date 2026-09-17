@@ -769,7 +769,7 @@ function ReportApp({
       <aside className="sidebar">
         <div className="brand">
           <div className="brand-mark">
-            <img src="/logo-pl-cocina.png" alt="Logotipo de PL Cocina" />
+            <img src="logo-pl-cocina.png" alt="Logotipo de PL Cocina" />
           </div>
           <div>
             <strong>PL Cocina</strong>
