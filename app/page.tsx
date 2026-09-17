@@ -94,7 +94,7 @@ const makeWeekSettings = (
   payroll: 0,
   overtime: 0,
   bonuses: 0,
-  completed: false,
+  completed: true,
 });
 const weeklyExpenseTotal = (settings: WeekSettings) =>
   settings.services + settings.payroll + settings.overtime + settings.bonuses;
@@ -466,6 +466,7 @@ function ReportApp({
                         : defaults.prices.molca,
                   },
                   bonuses: savedSettings?.bonuses ?? 0,
+                  completed: true,
                 },
               ];
             }),
@@ -1012,10 +1013,10 @@ function ReportApp({
           <section className="weekly-inputs setup-gate" aria-labelledby="weekly-inputs-title">
             <div className="weekly-inputs-heading">
               <div>
-                <p className="eyebrow">PASO 1 · DATOS DE LA SEMANA · {week.id}</p>
-                <h2 id="weekly-inputs-title">Completa los datos para calcular el reporte</h2>
+                <p className="eyebrow">DATOS DE LA SEMANA · {week.id}</p>
+                <h2 id="weekly-inputs-title">Edita los datos del reporte</h2>
               </div>
-              <span>Reporte aún no calculado</span>
+              <span>Precios y gastos semanales</span>
             </div>
             <div className="input-groups">
               <fieldset>
@@ -1044,7 +1045,7 @@ function ReportApp({
                 </div>
                 <small className="field-help">
                   Precios precargados desde PRECIOS PLOG. Puedes modificarlos
-                  para esta semana antes de calcular.
+                  para esta semana y actualizar el cálculo.
                 </small>
               </fieldset>
               <fieldset>
@@ -1082,7 +1083,7 @@ function ReportApp({
             <div className="setup-actions">
               <small>Los datos se guardarán para esta semana en este navegador.</small>
               <button className="calculate-button" onClick={calculateReport}>
-                Calcular y mostrar reporte
+                Guardar y actualizar reporte
                 <ArrowUpRight size={17} />
               </button>
             </div>
@@ -1682,7 +1683,7 @@ export default function Home() {
 
   useEffect(() => {
     let active = true;
-    fetch('/data2026.json')
+    fetch('data2026.json')
       .then((response) => {
         if (!response.ok) throw new Error('No fue posible cargar los datos');
         return response.json() as Promise<ReportData>;

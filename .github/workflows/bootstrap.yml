@@ -4,7 +4,16 @@ on:
   push:
     branches: [main]
     paths:
-      - '.bundle2/**'
+      - 'app/**'
+      - 'components/**'
+      - 'hooks/**'
+      - 'lib/**'
+      - 'public/**'
+      - 'index.html'
+      - 'pages-main.tsx'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'vite.pages.config.ts'
       - '.github/workflows/bootstrap.yml'
   workflow_dispatch:
 
@@ -23,30 +32,25 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Preparar sitio
-        shell: bash
-        run: |
-          mkdir -p /tmp/costeo-salsas
-          cat .bundle2/p01.b64 .bundle2/p02.b64 .bundle2/p03.b64 .bundle2/p04.b64 .bundle2/p05.b64 .bundle2/p06.b64 .bundle2/p07.b64 .bundle2/p08.b64 .bundle2/p09.b64 .bundle2/p10.b64 .bundle2/p11.b64 .bundle2/p12.b64 | base64 -d > /tmp/costeo-salsas.zip
-          unzip -q /tmp/costeo-salsas.zip -d /tmp/costeo-salsas
-
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
 
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
       - name: Instalar dependencias
-        working-directory: /tmp/costeo-salsas
-        run: npm install
+        run: pnpm install --frozen-lockfile
 
       - name: Compilar sitio
-        working-directory: /tmp/costeo-salsas
-        run: npm run build
+        run: pnpm run build:pages
 
       - uses: actions/configure-pages@v5
 
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: /tmp/costeo-salsas/dist
+          path: ./dist-pages
 
   deploy:
     environment:
