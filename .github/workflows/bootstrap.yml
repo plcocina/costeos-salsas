@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - '.bundle2/project.zip'
+      - '.bundle2/trigger.txt'
       - '.github/workflows/bootstrap.yml'
   workflow_dispatch:
 
