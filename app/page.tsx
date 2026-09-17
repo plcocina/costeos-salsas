@@ -1683,7 +1683,10 @@ export default function Home() {
 
   useEffect(() => {
     let active = true;
-    fetch('data2026.json')
+    fetch(`data2026.json?t=${Date.now()}`, {
+      cache: 'no-store',
+      headers: { 'Cache-Control': 'no-cache' },
+    })
       .then((response) => {
         if (!response.ok) throw new Error('No fue posible cargar los datos');
         return response.json() as Promise<ReportData>;
