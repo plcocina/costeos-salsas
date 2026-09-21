@@ -929,7 +929,9 @@ function ReportApp({
               </Select>
             </div>
           )}
-          {configuredWeeks.length > 0 && view === 'month' && (
+        </div>
+        {configuredWeeks.length > 0 && view === 'month' && (
+          <div className="monthly-sauce-sticky">
             <div
               className="sauce-filters"
               role="group"
@@ -948,8 +950,8 @@ function ReportApp({
                 </button>
               ))}
             </div>
-          )}
-        </div>
+          </div>
+        )}
         {view === 'trends' ? (
           <section className="trends-view" aria-labelledby="trends-title">
             <div className="trends-hero">
@@ -1632,8 +1634,8 @@ function ReportApp({
             </div>
           </section>
         ) : null}
-        <section className="bottom-grid">
-          <article className="panel ingredients-panel">
+        <section className={`bottom-grid ${view === 'month' && sauce === 'all' ? 'bottom-grid-cost-only' : ''}`}>
+          {!(view === 'month' && sauce === 'all') && <article className="panel ingredients-panel">
             <div className="panel-heading">
               <div>
                 <p className="eyebrow">MATERIA PRIMA · {week.id}</p>
@@ -1666,7 +1668,7 @@ function ReportApp({
                 </div>
               ))}
             </div>
-          </article>
+          </article>}
           <article className="panel cost-panel">
             <div className="panel-heading">
               <div>
