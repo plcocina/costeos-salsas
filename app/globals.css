@@ -693,6 +693,34 @@ button {
   font-weight: 800;
   opacity: 0.9;
 }
+.sauce-detail-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  margin-top: 11px;
+  padding: 7px 12px;
+  border: 1px solid #ffffffa8;
+  border-radius: 999px;
+  background: #ffffffec;
+  color: #173b2a;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 850;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 3px 10px #17231b1f;
+  transition: transform 150ms ease, background 150ms ease, box-shadow 150ms ease;
+}
+.sauce-detail-cta:hover {
+  background: #fff;
+  box-shadow: 0 5px 14px #17231b2b;
+  transform: translateY(-1px);
+}
+.sauce-detail-cta:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 2px;
+}
 .sauce-summary {
   margin: 0;
 }

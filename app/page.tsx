@@ -320,11 +320,13 @@ function SauceResultCard({
   week,
   settings,
   sharedExpenses,
+  onViewDetail,
 }: {
   sauceKey: Exclude<SauceKey, 'all'>;
   week: Week;
   settings: WeekSettings;
   sharedExpenses: number;
+  onViewDetail: () => void;
 }) {
   const data = week[sauceKey];
   const sales = sum(data.sales);
@@ -340,6 +342,15 @@ function SauceResultCard({
       <header style={{ background: meta.color }}>
         <h2>{meta.label.replace('Salsa ', '').toUpperCase()}</h2>
         <span>{money(settings.prices[sauceKey], 2)} por cubeta</span>
+        <button
+          type="button"
+          className="sauce-detail-cta"
+          onClick={onViewDetail}
+          aria-label={`Ver detalle de ${meta.label}`}
+        >
+          Ver detalle
+          <ArrowUpRight size={15} aria-hidden="true" />
+        </button>
       </header>
       <dl className="sauce-summary">
         <div className="summary-sales">
@@ -1121,6 +1132,7 @@ function ReportApp({
                   week={week}
                   settings={activeSettings}
                   sharedExpenses={weeklyExpenses / 3}
+                  onViewDetail={() => selectWeeklyResult(key)}
                 />
               ))}
             </section>
