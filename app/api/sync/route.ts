@@ -79,7 +79,6 @@ const numberValue = (value: string | undefined) => {
 const fetchCsv = async (id: string, gid: number) => {
   const response = await fetch(csvUrl(id, gid), {
     cache: 'no-store',
-    headers: { 'Cache-Control': 'no-cache' },
   });
   if (!response.ok) throw new Error(`Google Sheets respondió ${response.status}`);
   return parseCsv(await response.text());
