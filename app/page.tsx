@@ -79,6 +79,23 @@ type ReportData = {
   salePrices: Record<string, Record<Exclude<SauceKey, 'all'>, number>>;
 };
 
+const REPORT_CACHE_KEY = 'pl-cocina-report-data-v1';
+type CachedReport = { savedAt: string; data: ReportData };
+
+const isReportData = (value: unknown): value is ReportData => {
+  if (!value || typeof value !== 'object') return false;
+  const candidate = value as Partial<ReportData>;
+  return (
+    typeof candidate.generatedThrough === 'string' &&
+    Array.isArray(candidate.weeks) &&
+    candidate.weeks.length > 0 &&
+    !!candidate.monthWeeks &&
+    typeof candidate.monthWeeks === 'object' &&
+    !!candidate.salePrices &&
+    typeof candidate.salePrices === 'object'
+  );
+};
+
 type WeekSettings = {
   prices: Record<Exclude<SauceKey, 'all'>, number>;
   services: number;
@@ -1717,6 +1734,28 @@ export default function Home() {
 
   useEffect(() => {
     let active = true;
+    try {
+      const stored = window.localStorage.getItem(REPORT_CACHE_KEY);
+      if (stored) {
+        const cached = JSON.parse(stored) as Partial<CachedReport>;
+        if (isReportData(cached.data)) {
+          setReportData(cached.data);
+          if (cached.savedAt) {
+            setSyncNotice({
+              tone: 'success',
+              message: `Datos guardados de Google Sheets · ${new Intl.DateTimeFormat('es-MX', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(cached.savedAt))}`,
+            });
+          }
+          return () => {
+            active = false;
+          };
+        }
+        window.localStorage.removeItem(REPORT_CACHE_KEY);
+      }
+    } catch {
+      // If storage is unavailable, continue with the bundled report.
+    }
+
     fetch(`data2026.json?t=${Date.now()}`, {
       cache: 'no-store',
       headers: { 'Cache-Control': 'no-cache' },
@@ -1745,10 +1784,15 @@ export default function Home() {
       const response = await readGoogleSheets();
       const data = (await response.json()) as ReportData & { error?: string };
       if (!response.ok) throw new Error(data.error || 'No fue posible actualizar las hojas.');
+      const savedAt = new Date().toISOString();
+      window.localStorage.setItem(
+        REPORT_CACHE_KEY,
+        JSON.stringify({ savedAt, data } satisfies CachedReport),
+      );
       setReportData(data);
       setSyncNotice({
         tone: 'success',
-        message: `Datos actualizados desde Google Sheets · ${new Intl.DateTimeFormat('es-MX', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date())}`,
+        message: `Datos actualizados y guardados · ${new Intl.DateTimeFormat('es-MX', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(savedAt))}`,
       });
     } catch (error) {
       setSyncNotice({
