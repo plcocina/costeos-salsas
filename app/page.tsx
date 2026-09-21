@@ -868,7 +868,10 @@ function ReportApp({
             {syncNotice.message}
           </p>
         )}
-        <div className="filters" aria-label="Filtros del reporte">
+        <div
+          className={`filters ${view === 'month' ? 'monthly-filters-sticky' : ''}`}
+          aria-label="Filtros del reporte"
+        >
           {view !== 'trends' && (
             <Tabs
               value={view}
@@ -929,9 +932,7 @@ function ReportApp({
               </Select>
             </div>
           )}
-        </div>
-        {configuredWeeks.length > 0 && view === 'month' && (
-          <div className="monthly-sauce-sticky">
+          {configuredWeeks.length > 0 && view === 'month' && (
             <div
               className="sauce-filters"
               role="group"
@@ -950,8 +951,8 @@ function ReportApp({
                 </button>
               ))}
             </div>
-          </div>
-        )}
+          )}
+        </div>
         {view === 'trends' ? (
           <section className="trends-view" aria-labelledby="trends-title">
             <div className="trends-hero">
