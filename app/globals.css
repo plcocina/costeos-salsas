@@ -507,6 +507,25 @@ button {
   gap: 6px;
   margin-left: auto;
 }
+.monthly-sauce-sticky {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  justify-content: flex-end;
+  margin: -8px 0 13px;
+  padding: 8px 0;
+  background: color-mix(in srgb, var(--canvas) 94%, transparent);
+  backdrop-filter: blur(8px);
+}
+.monthly-sauce-sticky .sauce-filters {
+  margin-left: 0;
+  padding: 5px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 6px 18px #173b2a12;
+}
 .sauce-filters button {
   border: 1px solid var(--line);
   background: #fff;
@@ -1495,6 +1514,10 @@ tfoot {
   grid-template-columns: minmax(0, 1.45fr) minmax(280px, 0.75fr);
   gap: 13px;
 }
+.bottom-grid-cost-only {
+  grid-template-columns: minmax(280px, 520px);
+  justify-content: end;
+}
 .ingredient-list {
   margin-top: 16px;
 }
@@ -1720,6 +1743,14 @@ footer {
     overflow: auto;
     padding-bottom: 2px;
   }
+  .monthly-sauce-sticky {
+    margin-top: -10px;
+    padding: 6px 0;
+  }
+  .monthly-sauce-sticky .sauce-filters {
+    width: auto;
+    max-width: 100%;
+  }
   .metric-grid {
     grid-template-columns: 1fr 1fr;
   }
@@ -1803,6 +1834,7 @@ footer {
   }
   .sidebar,
   .filters,
+  .monthly-sauce-sticky,
   .topbar-actions,
   .report-toolbar,
   .weekly-result-tabs,
