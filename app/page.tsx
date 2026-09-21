@@ -1192,15 +1192,23 @@ function ReportApp({
           </>
         )}
         {view === 'week' && weeklyResultView !== 'summary' && (
-          <section className="sauce-detail-heading" aria-labelledby="sauce-detail-title">
+          <section
+            className="sauce-detail-heading"
+            aria-labelledby="sauce-detail-title"
+            style={{ background: sauceMeta[weeklyResultView].color }}
+          >
+            <button
+              type="button"
+              onClick={() => selectWeeklyResult('summary')}
+              aria-label="Regresar al resumen"
+            >
+              <ArrowLeft size={17} aria-hidden="true" />
+              Regresar
+            </button>
             <div>
               <p className="eyebrow">DETALLE SEMANAL · {week.id}</p>
               <h2 id="sauce-detail-title">{sauceMeta[weeklyResultView].label}</h2>
             </div>
-            <button type="button" onClick={() => selectWeeklyResult('summary')}>
-              <ArrowLeft size={17} aria-hidden="true" />
-              Regresar al resumen
-            </button>
           </section>
         )}
         <div
