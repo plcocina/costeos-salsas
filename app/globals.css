@@ -507,19 +507,18 @@ button {
   gap: 6px;
   margin-left: auto;
 }
-.monthly-sauce-sticky {
+.monthly-filters-sticky {
   position: sticky;
   top: 0;
   z-index: 20;
-  display: flex;
-  justify-content: flex-end;
-  margin: -8px 0 13px;
+  flex-wrap: nowrap;
+  margin-bottom: 20px;
   padding: 8px 0;
   background: color-mix(in srgb, var(--canvas) 94%, transparent);
   backdrop-filter: blur(8px);
 }
-.monthly-sauce-sticky .sauce-filters {
-  margin-left: 0;
+.monthly-filters-sticky .sauce-filters {
+  flex: 0 0 auto;
   padding: 5px;
   border: 1px solid var(--line);
   border-radius: 999px;
@@ -1743,11 +1742,11 @@ footer {
     overflow: auto;
     padding-bottom: 2px;
   }
-  .monthly-sauce-sticky {
-    margin-top: -10px;
+  .monthly-filters-sticky {
+    flex-wrap: wrap;
     padding: 6px 0;
   }
-  .monthly-sauce-sticky .sauce-filters {
+  .monthly-filters-sticky .sauce-filters {
     width: auto;
     max-width: 100%;
   }
@@ -1834,7 +1833,7 @@ footer {
   }
   .sidebar,
   .filters,
-  .monthly-sauce-sticky,
+  .monthly-filters-sticky,
   .topbar-actions,
   .report-toolbar,
   .weekly-result-tabs,
