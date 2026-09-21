@@ -1214,7 +1214,7 @@ button {
   overflow: hidden;
 }
 .daily-profit-heading {
-  margin-bottom: 19px;
+  margin-bottom: 12px;
 }
 .daily-profit-scroll {
   overflow-x: auto;
@@ -1222,9 +1222,9 @@ button {
 }
 .daily-profit-grid {
   display: grid;
-  grid-template-columns: repeat(7, minmax(430px, 1fr));
-  gap: 10px;
-  min-width: 3070px;
+  grid-template-columns: repeat(7, minmax(350px, 1fr));
+  gap: 8px;
+  min-width: 2498px;
 }
 .daily-profit-card {
   overflow: hidden;
@@ -1237,7 +1237,7 @@ button {
   justify-content: space-between;
   align-items: center;
   gap: 8px;
-  padding: 12px 13px;
+  padding: 8px 10px;
   color: #fff;
 }
 .daily-profit-card header span {
@@ -1254,20 +1254,25 @@ button {
   display: flex;
   justify-content: space-between;
   gap: 8px;
-  padding: 7px 12px;
-  font-size: 11px;
+  padding: 5px 10px;
+  font-size: 10px;
   font-weight: 750;
 }
 .daily-profit-card dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   margin: 0;
 }
 .daily-profit-card dl > div {
   min-height: 0;
-  padding: 9px 12px 10px;
+  padding: 6px 9px 7px;
   border-top: 1px solid #e8ebe7;
 }
-.daily-profit-card dl > div:first-child {
+.daily-profit-card dl > div:nth-child(-n + 2) {
   border-top: 0;
+}
+.daily-profit-card dl > div:nth-child(even) {
+  border-left: 1px solid #e8ebe7;
 }
 .daily-profit-card dt,
 .daily-profit-card dd {
@@ -1275,15 +1280,15 @@ button {
 }
 .daily-profit-card dt {
   color: #6d7771;
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 800;
   line-height: 1.2;
   text-transform: uppercase;
 }
 .daily-profit-card dd {
-  margin: 2px 0 0;
+  margin: 1px 0 0;
   color: #1d3025;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 900;
   white-space: nowrap;
 }
@@ -1298,19 +1303,19 @@ button {
   color: #284334;
 }
 .daily-profit-card .daily-real-profit dd {
-  font-size: 18px;
+  font-size: 16px;
 }
 .daily-profit-card .daily-profit-margin {
   background: #f7f9f5;
 }
 .daily-profit-card .daily-profit-margin dd {
-  font-size: 18px;
+  font-size: 16px;
 }
 .daily-profit-card .daily-profit-margin small {
   display: block;
-  margin-top: 2px;
+  margin-top: 0;
   color: #7a847e;
-  font-size: 9px;
+  font-size: 8px;
   font-weight: 750;
 }
 .daily-profit-card .daily-sale-price {
@@ -1324,12 +1329,12 @@ button {
   background: #f7f8f5;
   display: flex;
   justify-content: space-between;
-  padding: 10px 12px;
+  padding: 6px 9px;
   text-transform: uppercase;
 }
 .daily-materials-title strong {
   color: var(--ink);
-  font-size: 13px;
+  font-size: 11px;
   letter-spacing: .03em;
 }
 .daily-materials-title span {
@@ -1340,13 +1345,13 @@ button {
 .daily-materials-table-wrap { overflow-x: auto; }
 .daily-materials table {
   border-collapse: collapse;
-  min-width: 410px;
+  min-width: 320px;
   width: 100%;
 }
 .daily-materials th,
 .daily-materials td {
   border-bottom: 1px solid var(--line);
-  padding: 7px 8px;
+  padding: 4px 6px;
   text-align: right;
   vertical-align: middle;
 }
@@ -1355,20 +1360,20 @@ button {
 .daily-materials thead th {
   background: #eceeeb;
   color: #334039;
-  font-size: 10px;
+  font-size: 9px;
   line-height: 1.15;
   text-transform: uppercase;
 }
 .daily-materials tbody td {
   color: #25332c;
-  font-size: 12px;
+  font-size: 10px;
   white-space: nowrap;
 }
 .daily-materials tbody td:first-child { font-weight: 700; }
 .daily-materials td small {
   color: #748078;
   display: block;
-  font-size: 10px;
+  font-size: 8px;
   margin-top: 1px;
 }
 .daily-materials tfoot th,
@@ -1376,7 +1381,7 @@ button {
   background: #f7f8f5;
   border-bottom: 0;
   color: var(--forest);
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 850;
 }
 .daily-profit-roja .daily-profit-card header {
@@ -1740,7 +1745,7 @@ footer {
     margin-right: -2px;
   }
   .daily-profit-grid {
-    grid-template-columns: repeat(7, minmax(260px, 82vw));
+    grid-template-columns: repeat(7, minmax(320px, 88vw));
     min-width: max-content;
   }
   .mix-list {
