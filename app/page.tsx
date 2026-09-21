@@ -24,6 +24,7 @@ import {
   RefreshCw,
   TrendingUp,
 } from 'lucide-react';
+import { GET as readGoogleSheets } from './api/sync/route';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Select,
@@ -1739,10 +1740,9 @@ export default function Home() {
     setSyncing(true);
     setSyncNotice(null);
     try {
-      const response = await fetch(`/api/sync?t=${Date.now()}`, {
-        cache: 'no-store',
-        headers: { 'Cache-Control': 'no-cache' },
-      });
+      // GitHub Pages does not execute API routes. Run the same public-Sheets
+      // reader in the browser so the published static site can refresh too.
+      const response = await readGoogleSheets();
       const data = (await response.json()) as ReportData & { error?: string };
       if (!response.ok) throw new Error(data.error || 'No fue posible actualizar las hojas.');
       setReportData(data);
