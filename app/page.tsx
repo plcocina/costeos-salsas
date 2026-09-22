@@ -659,6 +659,10 @@ function ReportApp({
   });
   const trendWeeks = weeks.filter((item) => weekSettings[item.id]?.completed);
   const materialSeries = useMemo(() => ingredientPriceSeries(reportData), [reportData]);
+  const materialThrough = Object.values(materialSeries).flat().reduce((latest, series) => {
+    const date = series.points.at(-1)?.date;
+    return date && date > latest ? date : latest;
+  }, '');
   const reportReady = activeSettings.completed && !editingSettings;
   const updateSetting = (
     field: 'services' | 'payroll' | 'overtime' | 'bonuses',
@@ -862,7 +866,7 @@ function ReportApp({
         <nav className="sidebar-main-nav" aria-label="Secciones principales">
           <button
             type="button"
-            className={view !== 'trends' ? 'selected' : ''}
+            className={view === 'week' || view === 'month' ? 'selected' : ''}
             onClick={() => setView('week')}
           >
             <CalendarDays size={17} />
@@ -1021,7 +1025,7 @@ function ReportApp({
               <p className="eyebrow">PRECIOS DIARIOS · {reportData.generatedThrough.slice(0, 4)}</p>
               <h2 id="materials-title">Tendencia de costos de materia prima</h2>
               <p>Consulta el costo unitario diario de cada producto utilizado en Verde, Roja y Molca. Toca o pasa el cursor por la línea para ver el precio y la fecha.</p>
-              <span>Datos hasta el {shortDate(reportData.generatedThrough)}</span>
+              <span>Datos hasta el {shortDate(materialThrough || reportData.generatedThrough)}</span>
             </div>
             {(['verde', 'roja', 'molca'] as const).map((key) => (
               <section className={`materials-sauce materials-${key}`} key={key} aria-labelledby={`materials-${key}-title`}>
