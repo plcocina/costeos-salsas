@@ -20,6 +20,7 @@ import {
   CalendarDays,
   CircleDollarSign,
   FileDown,
+  Package,
   PackageCheck,
   RefreshCw,
   TrendingUp,
@@ -35,7 +36,7 @@ import {
 } from '@/components/ui/select';
 
 type SauceKey = 'all' | 'verde' | 'roja' | 'molca';
-type ReportView = 'week' | 'month' | 'trends';
+type ReportView = 'week' | 'month' | 'trends' | 'materials';
 type WeeklyResultView = 'summary' | Exclude<SauceKey, 'all'>;
 type ReportMonth =
   | 'enero'
@@ -149,6 +150,43 @@ const money = (value: number, digits = 0) =>
 const sum = (values: number[]) => values.reduce((total, value) => total + value, 0);
 const integer = (value: number) =>
   new Intl.NumberFormat('es-MX').format(Math.round(value));
+
+const ingredientDate = (weekIndex: number, dayIndex: number) => {
+  const date = new Date(Date.UTC(2025, 11, 29 + weekIndex * 7 + dayIndex));
+  return date.toISOString().slice(0, 10);
+};
+const shortDate = (value: string) =>
+  new Intl.DateTimeFormat('es-MX', { day: 'numeric', month: 'short', timeZone: 'UTC' })
+    .format(new Date(`${value}T12:00:00Z`));
+
+type IngredientPriceSeries = {
+  name: string;
+  unit: string;
+  points: { date: string; price: number }[];
+};
+
+const ingredientPriceSeries = (report: ReportData) => {
+  const year = report.generatedThrough.slice(0, 4);
+  const result = {} as Record<Exclude<SauceKey, 'all'>, IngredientPriceSeries[]>;
+  (['verde', 'roja', 'molca'] as const).forEach((sauce) => {
+    const products = new Map<string, IngredientPriceSeries>();
+    report.weeks.forEach((week, weekIndex) => {
+      week[sauce].ingredients.forEach((ingredients, dayIndex) => {
+        const date = ingredientDate(weekIndex, dayIndex);
+        if (!date.startsWith(year) || date > report.generatedThrough) return;
+        ingredients.forEach(({ name, unit, unitCost }) => {
+          if (!Number.isFinite(unitCost) || unitCost <= 0) return;
+          const key = `${name}\u0000${unit}`;
+          const series = products.get(key) || { name, unit, points: [] };
+          series.points.push({ date, price: unitCost });
+          products.set(key, series);
+        });
+      });
+    });
+    result[sauce] = [...products.values()];
+  });
+  return result;
+};
 
 const ingredientsForWeek = (week: Week, sauce: Exclude<SauceKey, 'all'>) => {
   const totals = new Map<string, { quantity: number; unit: string; cost: number }>();
@@ -293,6 +331,20 @@ function TrendTooltip({
           </section>
         )}
       </div>
+    </div>
+  );
+}
+
+function IngredientPriceTooltip({ active, payload }: {
+  active?: boolean;
+  payload?: readonly { payload?: { date: string; price: number } }[];
+}) {
+  const point = payload?.[0]?.payload;
+  if (!active || !point) return null;
+  return (
+    <div className="ingredient-price-tooltip">
+      <span>{shortDate(point.date)}</span>
+      <strong>{money(point.price, 2)}</strong>
     </div>
   );
 }
@@ -606,6 +658,7 @@ function ReportApp({
     return monthWeeks[reportMonth]?.includes(item.id) && weekSettings[item.id]?.completed;
   });
   const trendWeeks = weeks.filter((item) => weekSettings[item.id]?.completed);
+  const materialSeries = useMemo(() => ingredientPriceSeries(reportData), [reportData]);
   const reportReady = activeSettings.completed && !editingSettings;
   const updateSetting = (
     field: 'services' | 'payroll' | 'overtime' | 'bonuses',
@@ -831,6 +884,15 @@ function ReportApp({
             placement="sidebar"
           />
         )}
+        <button
+          type="button"
+          className={`sidebar-materials-link ${view === 'materials' ? 'selected' : ''}`}
+          onClick={() => setView('materials')}
+          aria-current={view === 'materials' ? 'page' : undefined}
+        >
+          <Package size={17} aria-hidden="true" />
+          Materia prima
+        </button>
         <div className="source-status">
           <span className="status-dot" />
           <div>
@@ -846,7 +908,7 @@ function ReportApp({
             <h1>Costeo de salsas</h1>
           </div>
           <div className="topbar-actions">
-            {(reportReady || view === 'trends') && (
+            {(reportReady || view === 'trends' || view === 'materials') && (
               <button className="pdf-button" onClick={() => window.print()}>
                 <FileDown size={16} />
                 Descargar PDF
@@ -872,7 +934,7 @@ function ReportApp({
           className={`filters ${view === 'month' ? 'monthly-filters-sticky' : ''}`}
           aria-label="Filtros del reporte"
         >
-          {view !== 'trends' && (
+          {view !== 'trends' && view !== 'materials' && (
             <Tabs
               value={view}
               onValueChange={(value) => setView(value as 'week' | 'month')}
@@ -953,7 +1015,54 @@ function ReportApp({
             </div>
           )}
         </div>
-        {view === 'trends' ? (
+        {view === 'materials' ? (
+          <section className="materials-view" aria-labelledby="materials-title">
+            <div className="materials-hero">
+              <p className="eyebrow">PRECIOS DIARIOS · {reportData.generatedThrough.slice(0, 4)}</p>
+              <h2 id="materials-title">Tendencia de costos de materia prima</h2>
+              <p>Consulta el costo unitario diario de cada producto utilizado en Verde, Roja y Molca. Toca o pasa el cursor por la línea para ver el precio y la fecha.</p>
+              <span>Datos hasta el {shortDate(reportData.generatedThrough)}</span>
+            </div>
+            {(['verde', 'roja', 'molca'] as const).map((key) => (
+              <section className={`materials-sauce materials-${key}`} key={key} aria-labelledby={`materials-${key}-title`}>
+                <div className="materials-sauce-heading">
+                  <div>
+                    <p className="eyebrow">MATERIA PRIMA POR SALSA</p>
+                    <h3 id={`materials-${key}-title`}><i className={`dot dot-${key}`} aria-hidden="true" />{sauceMeta[key].label}</h3>
+                  </div>
+                  <span>{materialSeries[key].length} productos</span>
+                </div>
+                <div className="materials-chart-grid">
+                  {materialSeries[key].map((series) => {
+                    const latest = series.points.at(-1);
+                    return (
+                      <article className="panel material-chart-card" key={`${series.name}-${series.unit}`}>
+                        <div className="material-chart-heading">
+                          <div>
+                            <h4>{series.name}</h4>
+                            <span>Precio por {series.unit === 'lt' ? 'litro' : series.unit === 'kg' ? 'kg' : 'bolsa'}</span>
+                          </div>
+                          <strong>{latest ? money(latest.price, 2) : '—'}</strong>
+                        </div>
+                        <div className="material-chart-wrap" role="img" aria-label={`Tendencia diaria de ${series.name} para ${sauceMeta[key].label}, de ${shortDate(series.points[0].date)} a ${latest ? shortDate(latest.date) : ''}`}>
+                          <ResponsiveContainer width="100%" height="100%">
+                            <LineChart data={series.points} margin={{ top: 12, right: 12, left: 0, bottom: 0 }}>
+                              <CartesianGrid vertical={false} stroke="#E8E9E4" strokeDasharray="4 4" />
+                              <XAxis dataKey="date" axisLine={false} tickLine={false} minTickGap={32} tick={{ fill: '#68706B', fontSize: 11 }} tickFormatter={shortDate} />
+                              <YAxis axisLine={false} tickLine={false} width={56} domain={['auto', 'auto']} tick={{ fill: '#89908B', fontSize: 11 }} tickFormatter={(value) => money(Number(value), Number(value) < 1 ? 2 : 0)} />
+                              <Tooltip content={(props) => <IngredientPriceTooltip active={props.active} payload={props.payload as readonly { payload?: { date: string; price: number } }[]} />} />
+                              <Line type="stepAfter" dataKey="price" stroke={sauceMeta[key].color} strokeWidth={2.5} dot={false} activeDot={{ r: 5 }} isAnimationActive={false} />
+                            </LineChart>
+                          </ResponsiveContainer>
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+              </section>
+            ))}
+          </section>
+        ) : view === 'trends' ? (
           <section className="trends-view" aria-labelledby="trends-title">
             <div className="trends-hero">
               <div>
@@ -1133,7 +1242,7 @@ function ReportApp({
               placement="workspace"
             />
           </>
-        ) : configuredWeeks.length === 0 ? (
+        ) : view === 'materials' ? null : configuredWeeks.length === 0 ? (
           <section className="empty-report">
             <h2>Aún no hay semanas calculadas</h2>
             <p>Regresa a la vista semanal, captura sus datos y calcula el reporte.</p>
@@ -1143,7 +1252,7 @@ function ReportApp({
             <span>{configuredWeeks.length} semanas incluidas en el reporte mensual</span>
           </div>
         )}
-        {view !== 'trends' && (view === 'month' ? configuredWeeks.length > 0 : reportReady) && <>
+        {(view === 'week' || view === 'month') && (view === 'month' ? configuredWeeks.length > 0 : reportReady) && <>
         {view === 'week' && weeklyResultView === 'summary' && (
           <>
             <section className="sauce-results-grid" aria-label="Resultados por salsa">
