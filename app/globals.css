@@ -910,13 +910,13 @@ button {
 .sauce-summary .summary-production {
   background: #f4d4d4;
 }
-.sauce-summary > div:nth-child(3) dt,
-.sauce-summary > div:nth-child(3) dd {
-  color: #a32620;
-}
-.sauce-summary > div:nth-child(4) dt,
-.sauce-summary > div:nth-child(4) dd {
+.sauce-summary .summary-revenue dt,
+.sauce-summary .summary-revenue dd {
   color: #397b25;
+}
+.sauce-summary .summary-cost dt,
+.sauce-summary .summary-cost dd {
+  color: #a32620;
 }
 .sauce-summary .summary-expenses {
   background: #f7f7f5;
