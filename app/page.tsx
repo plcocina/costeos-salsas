@@ -354,6 +354,37 @@ function IngredientPriceTooltip({ active, payload }: {
   );
 }
 
+type CostChartPoint = {
+  label: string;
+  revenue: number;
+  cost: number;
+  expenses: number;
+  services: number;
+  payroll: number;
+  overtime: number;
+  bonuses: number;
+};
+
+function CostComparisonTooltip({ active, payload, daily }: {
+  active?: boolean;
+  payload?: readonly { payload?: CostChartPoint }[];
+  daily: boolean;
+}) {
+  const point = payload?.[0]?.payload;
+  if (!active || !point) return null;
+  return (
+    <div className="cost-comparison-tooltip">
+      <strong>{point.label}</strong>
+      <div><span>Ingresos</span><b>{money(point.revenue, 2)}</b></div>
+      <div><span>Materia prima</span><b>{money(point.cost, 2)}</b></div>
+      <div className="cost-tooltip-expenses"><span>Gastos {daily ? 'asignados al día' : 'semanales'}</span><b>{money(point.expenses, 2)}</b></div>
+      <small>Servicios {money(point.services, 2)} · Nómina {money(point.payroll, 2)}<br />Horas extras {money(point.overtime, 2)} · Bonos {money(point.bonuses, 2)}</small>
+      <div className="cost-tooltip-total"><span>Materia prima + gastos</span><b>{money(point.cost + point.expenses, 2)}</b></div>
+      <div><span>Resultado</span><b>{money(point.revenue - point.cost - point.expenses, 2)}</b></div>
+    </div>
+  );
+}
+
 function WeeklySauceMenu({
   value,
   onSelect,
@@ -833,6 +864,30 @@ function ReportApp({
     { sales: 0, production: 0, cost: 0, revenue: 0 },
   );
   const weeklyExpenses = weeklyExpenseTotal(activeSettings);
+  const costChartData: CostChartPoint[] = view === 'week'
+    ? daily.map((row) => ({
+        label: row.date,
+        revenue: row.revenue,
+        cost: row.cost,
+        expenses: weeklyExpenses * expenseShare / 7,
+        services: activeSettings.services * expenseShare / 7,
+        payroll: activeSettings.payroll * expenseShare / 7,
+        overtime: activeSettings.overtime * expenseShare / 7,
+        bonuses: activeSettings.bonuses * expenseShare / 7,
+      }))
+    : monthly.map((row, index) => {
+        const settings = weekSettings[configuredWeeks[index].id] || defaultSettingsForWeek(configuredWeeks[index].id);
+        return {
+          label: row.name,
+          revenue: row.revenue,
+          cost: row.cost,
+          expenses: row.expenses,
+          services: settings.services * expenseShare,
+          payroll: settings.payroll * expenseShare,
+          overtime: settings.overtime * expenseShare,
+          bonuses: settings.bonuses * expenseShare,
+        };
+      });
   const weeksWithoutExpenses =
     view === 'week'
       ? weeklyExpenses === 0 ? [week.id] : []
@@ -1448,20 +1503,20 @@ function ReportApp({
                     ? 'LUNES A DOMINGO'
                     : `${reportMonth.toUpperCase()} · ${configuredWeeks.length} SEMANAS`}
                 </p>
-                <h2>Ingresos y costo de producción</h2>
+                <h2>Ingresos, materia prima y gastos</h2>
               </div>
               <span className="pill">{activeLabel}</span>
             </div>
             <div className="chart-wrap">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
-                  data={view === 'week' ? daily : monthly}
+                  data={costChartData}
                   barGap={5}
                   margin={{ top: 8, right: 4, left: 4, bottom: 0 }}
                 >
                   <CartesianGrid vertical={false} stroke="#E8E9E4" />
                   <XAxis
-                    dataKey={view === 'week' ? 'date' : 'name'}
+                    dataKey="label"
                     axisLine={false}
                     tickLine={false}
                     tick={{ fill: '#68706B', fontSize: 12 }}
@@ -1474,12 +1529,7 @@ function ReportApp({
                     width={46}
                   />
                   <Tooltip
-                    formatter={(v) => money(Number(v))}
-                    contentStyle={{
-                      border: '1px solid #dfe2dc',
-                      borderRadius: 12,
-                      boxShadow: '0 12px 30px #17231b18',
-                    }}
+                    content={(props) => <CostComparisonTooltip active={props.active} payload={props.payload as readonly { payload?: CostChartPoint }[]} daily={view === 'week'} />}
                   />
                   <Bar
                     dataKey="revenue"
@@ -1491,6 +1541,13 @@ function ReportApp({
                     dataKey="cost"
                     name="Materia prima"
                     fill="#A8C957"
+                    stackId="costs"
+                  />
+                  <Bar
+                    dataKey="expenses"
+                    name="Gastos semanales"
+                    fill="#E5A344"
+                    stackId="costs"
                     radius={[7, 7, 0, 0]}
                   />
                 </BarChart>
@@ -1503,9 +1560,19 @@ function ReportApp({
               </span>
               <span>
                 <i className="legend-lime" />
-                Costo de producción
+                Materia prima
+              </span>
+              <span>
+                <i className="legend-expenses" />
+                Gastos semanales
               </span>
             </div>
+            <p className="chart-allocation-note">
+              La barra de gastos se apila sobre materia prima. {view === 'week'
+                ? 'Cada día recibe 1/7 de los gastos semanales.'
+                : 'Cada barra incluye los gastos de su semana.'}{' '}
+              Al filtrar una salsa se muestra su tercio de gastos.
+            </p>
           </article>
           {view === 'month' && <article className="panel mix-panel">
             <div className="panel-heading">
