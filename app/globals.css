@@ -1320,6 +1320,7 @@ button {
 .legend {
   display: flex;
   gap: 18px;
+  flex-wrap: wrap;
   justify-content: center;
   font-size: 11px;
   color: #68716c;
@@ -1339,6 +1340,50 @@ button {
 }
 .legend-lime {
   background: var(--lime);
+}
+.legend-expenses { background: #e5a344; }
+.chart-allocation-note {
+  margin: 10px 0 0;
+  color: #7d8980;
+  font-size: 10px;
+  line-height: 1.45;
+  text-align: center;
+}
+.cost-comparison-tooltip {
+  min-width: 230px;
+  padding: 13px 15px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 12px 30px #17231b18;
+}
+.cost-comparison-tooltip > strong {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--ink);
+  font-size: 14px;
+}
+.cost-comparison-tooltip > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 4px 0;
+  font-size: 12px;
+}
+.cost-comparison-tooltip > div b { white-space: nowrap; }
+.cost-comparison-tooltip small {
+  display: block;
+  margin: 2px 0 5px;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.5;
+}
+.cost-comparison-tooltip .cost-tooltip-expenses { color: #9a5f12; }
+.cost-comparison-tooltip .cost-tooltip-total {
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+  color: var(--ink);
+  font-weight: 800;
 }
 .daily-profit-panel {
   margin-bottom: 13px;
