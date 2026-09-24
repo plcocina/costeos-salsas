@@ -1132,7 +1132,7 @@ button {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 .four-fields {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: minmax(145px, 1.5fr) repeat(3, minmax(0, 1fr));
 }
 .field-row label > span {
   display: block;
@@ -1146,6 +1146,29 @@ button {
   color: #758079;
   font-size: 10px;
   line-height: 1.4;
+}
+.services-calculation {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 11px;
+  padding: 10px 12px;
+  border-radius: 9px;
+  color: #455b49;
+  background: #edf3e8;
+  font-size: 11px;
+  line-height: 1.5;
+}
+.services-calculation button {
+  flex: none;
+  padding: 6px 9px;
+  border: 1px solid #b9cbb0;
+  border-radius: 7px;
+  color: var(--ink);
+  background: #fff;
+  font-size: 11px;
+  font-weight: 800;
 }
 .money-input {
   display: flex;
@@ -1900,6 +1923,7 @@ footer {
   .calculate-button {
     width: 100%;
   }
+  .services-calculation { align-items: flex-start; flex-direction: column; }
   .grand-total-heading {
     align-items: flex-start;
     flex-direction: column;
