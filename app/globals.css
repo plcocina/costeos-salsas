@@ -894,7 +894,6 @@ button {
   color: #46534c;
   font-size: 12px;
   font-weight: 800;
-  text-transform: uppercase;
   line-height: 1.25;
 }
 .sauce-summary dd {
@@ -914,22 +913,23 @@ button {
 .sauce-summary .summary-revenue dd {
   color: #397b25;
 }
-.sauce-summary .summary-cost dt,
-.sauce-summary .summary-cost dd {
-  color: #a32620;
-}
 .sauce-summary .summary-expenses {
   background: #f7f7f5;
 }
+.sauce-summary .summary-cost dt,
+.sauce-summary .summary-cost dd,
+.sauce-summary .summary-expenses dt,
 .sauce-summary .summary-expenses dd {
-  color: #7b332e;
+  color: #626b66;
 }
 .sauce-summary .summary-production-cost {
   background: #edf1ec;
 }
-.sauce-summary .summary-production-cost dt,
 .sauce-summary .summary-production-cost dd {
   color: #243b2b;
+}
+.sauce-summary .summary-production-cost dt {
+  color: #a32620;
 }
 .sauce-summary .summary-profit {
   border-top: 2px solid #273a2f;
