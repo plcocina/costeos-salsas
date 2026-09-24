@@ -26,6 +26,7 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import { GET as readGoogleSheets } from './api/sync/route';
+import { fetchServiceWeekCosts, type ServiceWeekCosts } from './service-costs';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Select,
@@ -81,6 +82,7 @@ type ReportData = {
 };
 
 const REPORT_CACHE_KEY = 'pl-cocina-report-data-v1';
+const SERVICE_CACHE_KEY = 'pl-cocina-service-costs-v1';
 type CachedReport = { savedAt: string; data: ReportData };
 
 const isReportData = (value: unknown): value is ReportData => {
@@ -100,6 +102,7 @@ const isReportData = (value: unknown): value is ReportData => {
 type WeekSettings = {
   prices: Record<Exclude<SauceKey, 'all'>, number>;
   services: number;
+  servicesManual?: boolean;
   payroll: number;
   overtime: number;
   bonuses: number;
@@ -108,9 +111,11 @@ type WeekSettings = {
 
 const makeWeekSettings = (
   prices: WeekSettings['prices'] = { verde: 0, roja: 0, molca: 0 },
+  services = 0,
 ): WeekSettings => ({
   prices,
-  services: 0,
+  services,
+  servicesManual: false,
   payroll: 0,
   overtime: 0,
   bonuses: 0,
@@ -489,11 +494,15 @@ function SauceResultCard({
 
 function ReportApp({
   reportData,
+  serviceWeeks,
+  serviceError,
   onSync,
   syncing,
   syncNotice,
 }: {
   reportData: ReportData;
+  serviceWeeks: ServiceWeekCosts | null;
+  serviceError: boolean;
   onSync: () => void;
   syncing: boolean;
   syncNotice: { tone: 'success' | 'error'; message: string } | null;
@@ -501,7 +510,7 @@ function ReportApp({
   const weeks = reportData.weeks;
   const monthWeeks = reportData.monthWeeks;
   const defaultSettingsForWeek = (id: string) =>
-    makeWeekSettings(reportData.salePrices[id]);
+    makeWeekSettings(reportData.salePrices[id], serviceWeeks?.[id]?.total ?? 0);
   const [view, setView] = useState<ReportView>('week');
   const [reportMonth, setReportMonth] = useState<ReportMonth>('septiembre');
   const [weekId, setWeekId] = useState('S38');
@@ -528,6 +537,7 @@ function ReportApp({
             weeks.map((item) => {
               const defaults = defaultSettingsForWeek(item.id);
               const savedSettings = parsed[item.id];
+              const servicesManual = savedSettings?.servicesManual ?? (savedSettings?.services ?? 0) > 0;
               return [
                 item.id,
                 {
@@ -548,6 +558,8 @@ function ReportApp({
                         : defaults.prices.molca,
                   },
                   bonuses: savedSettings?.bonuses ?? 0,
+                  services: servicesManual ? savedSettings?.services ?? 0 : defaults.services,
+                  servicesManual,
                   completed: true,
                 },
               ];
@@ -567,6 +579,17 @@ function ReportApp({
       JSON.stringify(weekSettings),
     );
   }, [settingsReady, weekSettings]);
+  useEffect(() => {
+    if (!settingsReady || !serviceWeeks) return;
+    setWeekSettings((current) => Object.fromEntries(
+      weeks.map((item) => {
+        const saved = current[item.id] || defaultSettingsForWeek(item.id);
+        return [item.id, saved.servicesManual
+          ? saved
+          : { ...saved, services: serviceWeeks[item.id]?.total ?? 0 }];
+      }),
+    ));
+  }, [settingsReady, serviceWeeks]);
   useEffect(() => {
     const previous = previousSalePrices.current;
     setWeekSettings((current) =>
@@ -673,6 +696,17 @@ function ReportApp({
       [week.id]: {
         ...(current[week.id] || defaultSettingsForWeek(week.id)),
         [field]: value,
+        ...(field === 'services' ? { servicesManual: true } : {}),
+      },
+    }));
+  };
+  const useAutomaticServices = () => {
+    setWeekSettings((current) => ({
+      ...current,
+      [week.id]: {
+        ...(current[week.id] || defaultSettingsForWeek(week.id)),
+        services: serviceWeeks?.[week.id]?.total ?? 0,
+        servicesManual: false,
       },
     }));
   };
@@ -1223,6 +1257,22 @@ function ReportApp({
                     </label>
                   ))}
                 </div>
+                <div className="services-calculation" role="status">
+                  {serviceWeeks?.[week.id] ? (
+                    <>
+                      <span>
+                        Servicios para Salsas: Luz {money(serviceWeeks[week.id].luz, 2)} · Agua {money(serviceWeeks[week.id].agua, 2)} · Gas {money(serviceWeeks[week.id].gas, 2)}.
+                        {activeSettings.servicesManual ? ' El importe del campo fue editado.' : ' Importe calculado automáticamente.'}
+                        {serviceError ? ' Se conserva el último cálculo guardado.' : ''}
+                      </span>
+                      {activeSettings.servicesManual && (
+                        <button type="button" onClick={useAutomaticServices}>Usar cálculo automático</button>
+                      )}
+                    </>
+                  ) : (
+                    <span>{serviceError ? 'No fue posible leer SERVICIOS 2026. Puedes capturar el importe manualmente.' : 'Consultando Luz, Agua y Gas de SERVICIOS 2026…'}</span>
+                  )}
+                </div>
               </fieldset>
             </div>
             {formError && <p className="form-error" role="alert">{formError}</p>}
@@ -1246,7 +1296,7 @@ function ReportApp({
               placement="workspace"
             />
           </>
-        ) : view === 'materials' ? null : configuredWeeks.length === 0 ? (
+        ) : configuredWeeks.length === 0 ? (
           <section className="empty-report">
             <h2>Aún no hay semanas calculadas</h2>
             <p>Regresa a la vista semanal, captura sus datos y calcula el reporte.</p>
@@ -1841,6 +1891,8 @@ function ReportApp({
 
 export default function Home() {
   const [reportData, setReportData] = useState<ReportData | null>(null);
+  const [serviceWeeks, setServiceWeeks] = useState<ServiceWeekCosts | null>(null);
+  const [serviceError, setServiceError] = useState(false);
   const [loadError, setLoadError] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [syncNotice, setSyncNotice] = useState<{
@@ -1851,6 +1903,8 @@ export default function Home() {
   useEffect(() => {
     let active = true;
     try {
+      const savedServices = window.localStorage.getItem(SERVICE_CACHE_KEY);
+      if (savedServices) setServiceWeeks(JSON.parse(savedServices) as ServiceWeekCosts);
       const stored = window.localStorage.getItem(REPORT_CACHE_KEY);
       if (stored) {
         const cached = JSON.parse(stored) as Partial<CachedReport>;
@@ -1890,6 +1944,23 @@ export default function Home() {
       active = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (!reportData) return;
+    let active = true;
+    setServiceError(false);
+    fetchServiceWeekCosts(reportData.weeks.length)
+      .then((costs) => {
+        if (!active) return;
+        setServiceWeeks(costs);
+        setServiceError(false);
+        try { window.localStorage.setItem(SERVICE_CACHE_KEY, JSON.stringify(costs)); } catch { /* Sigue con los datos en memoria. */ }
+      })
+      .catch(() => {
+        if (active) setServiceError(true);
+      });
+    return () => { active = false; };
+  }, [reportData]);
 
   const syncSheets = async () => {
     setSyncing(true);
@@ -1940,6 +2011,8 @@ export default function Home() {
   return (
     <ReportApp
       reportData={reportData}
+      serviceWeeks={serviceWeeks}
+      serviceError={serviceError}
       onSync={syncSheets}
       syncing={syncing}
       syncNotice={syncNotice}
