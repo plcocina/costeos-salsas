@@ -447,7 +447,7 @@ function SauceResultCard({
   return (
     <article className={`sauce-result-card sauce-result-${sauceKey}`}>
       <header style={{ background: meta.color }}>
-        <h2>{meta.label.replace('Salsa ', '').toUpperCase()}</h2>
+        <h2>{meta.label.replace('Salsa ', '').replace(/^./, (letter) => letter.toUpperCase())}</h2>
         <span>{money(settings.prices[sauceKey], 2)} por cubeta</span>
         <button
           type="button"
@@ -478,7 +478,7 @@ function SauceResultCard({
         </div>
         <div className="summary-expenses">
           <dt>(−) Gastos asignados</dt>
-          <dd>-{money(sharedExpenses, 2)}</dd>
+          <dd>{money(sharedExpenses, 2)}</dd>
         </div>
         <div className="summary-production-cost">
           <dt>Costo de producción total</dt>
