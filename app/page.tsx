@@ -468,16 +468,16 @@ function SauceResultCard({
           <dt>Total cubetas producidas</dt>
           <dd>{integer(production)}</dd>
         </div>
-        <div>
-          <dt>Costo de producción</dt>
-          <dd>{money(cost, 2)}</dd>
-        </div>
-        <div>
-          <dt>Ingreso por cubetas vendidas</dt>
+        <div className="summary-revenue">
+          <dt>(+) Ingreso por cubetas vendidas</dt>
           <dd>{money(revenue, 2)}</dd>
         </div>
+        <div className="summary-cost">
+          <dt>(−) Costo de producción</dt>
+          <dd>{money(cost, 2)}</dd>
+        </div>
         <div className="summary-expenses">
-          <dt>Gastos asignados</dt>
+          <dt>(−) Gastos asignados</dt>
           <dd>-{money(sharedExpenses, 2)}</dd>
         </div>
         <div className="summary-profit">
