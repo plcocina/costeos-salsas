@@ -379,8 +379,8 @@ function CostComparisonTooltip({ active, payload, daily }: {
       <div><span>Materia prima</span><b>{money(point.cost, 2)}</b></div>
       <div className="cost-tooltip-expenses"><span>Gastos {daily ? 'asignados al día' : 'semanales'}</span><b>{money(point.expenses, 2)}</b></div>
       <small>Servicios {money(point.services, 2)} · Nómina {money(point.payroll, 2)}<br />Horas extras {money(point.overtime, 2)} · Bonos {money(point.bonuses, 2)}</small>
-      <div className="cost-tooltip-total"><span>Materia prima + gastos</span><b>{money(point.cost + point.expenses, 2)}</b></div>
-      <div><span>Resultado</span><b>{money(point.revenue - point.cost - point.expenses, 2)}</b></div>
+      <div className="cost-tooltip-total"><span>Costo de producción (materia prima + gastos)</span><b>{money(point.cost + point.expenses, 2)}</b></div>
+      <div><span>Utilidad neta</span><b>{money(point.revenue - point.cost - point.expenses, 2)}</b></div>
     </div>
   );
 }
@@ -473,12 +473,16 @@ function SauceResultCard({
           <dd>{money(revenue, 2)}</dd>
         </div>
         <div className="summary-cost">
-          <dt>(−) Costo de producción</dt>
+          <dt>(−) Costo de materia prima</dt>
           <dd>{money(cost, 2)}</dd>
         </div>
         <div className="summary-expenses">
           <dt>(−) Gastos asignados</dt>
           <dd>-{money(sharedExpenses, 2)}</dd>
+        </div>
+        <div className="summary-production-cost">
+          <dt>Costo de producción total</dt>
+          <dd>{money(cost + sharedExpenses, 2)}</dd>
         </div>
         <div className="summary-profit">
           <dt>Utilidad neta</dt>
@@ -1422,9 +1426,10 @@ function ReportApp({
               <div className="grand-total-grid">
                 <div><span>Cubetas vendidas</span><strong>{integer(weeklyCombined.sales)}</strong></div>
                 <div><span>Cubetas producidas</span><strong>{integer(weeklyCombined.production)}</strong></div>
-                <div><span>Costo de producción</span><strong>{money(weeklyCombined.cost, 2)}</strong></div>
+                <div><span>Costo de materia prima</span><strong>{money(weeklyCombined.cost, 2)}</strong></div>
                 <div><span>Ingresos</span><strong>{money(weeklyCombined.revenue, 2)}</strong></div>
                 <div><span>Gastos semanales</span><strong>{money(weeklyExpenses, 2)}</strong></div>
+                <div><span>Costo de producción total</span><strong>{money(weeklyCombined.cost + weeklyExpenses, 2)}</strong></div>
                 <div className="grand-net"><span>Utilidad neta total</span><strong className={weeklyNet < 0 ? 'loss' : 'profit'}>{money(weeklyNet, 2)}</strong></div>
               </div>
             </section>
@@ -1638,7 +1643,7 @@ function ReportApp({
                 <p className="eyebrow">RENTABILIDAD DIARIA · {week.id}</p>
                 <h2 id="daily-profit-title">Resultado por cada día de la semana</h2>
                 <p className="panel-explanation">
-                  Del costo unitario de producción a la utilidad real obtenida por día.
+                  Del costo unitario de materia prima a la utilidad diaria antes de gastos asignados.
                 </p>
               </div>
               <span
@@ -1675,11 +1680,11 @@ function ReportApp({
                           <dd>{salePrice ? money(salePrice, 2) : 'Pendiente'}</dd>
                         </div>
                         <div>
-                          <dt>Costo de la cubeta</dt>
+                          <dt>Materia prima por cubeta</dt>
                           <dd>{money(unitCost, 2)}</dd>
                         </div>
                         <div>
-                          <dt>Utilidad por cubeta</dt>
+                          <dt>Utilidad por cubeta antes de gastos</dt>
                           <dd className={unitProfit >= 0 ? 'profit' : 'loss'}>
                             {money(unitProfit, 2)}
                           </dd>
@@ -1689,7 +1694,7 @@ function ReportApp({
                           <dd>{money(row.revenue, 2)}</dd>
                         </div>
                         <div className="daily-real-profit">
-                          <dt>Utilidad real total</dt>
+                          <dt>Utilidad diaria antes de gastos</dt>
                           <dd className={realProfit >= 0 ? 'profit' : 'loss'}>
                             {money(realProfit, 2)}
                           </dd>
@@ -1739,7 +1744,7 @@ function ReportApp({
                             </tbody>
                             <tfoot>
                               <tr>
-                                <th colSpan={3}>Costo total de producción</th>
+                                <th colSpan={3}>Costo total de materia prima</th>
                                 <td>{money(row.cost, 2)}</td>
                               </tr>
                             </tfoot>
