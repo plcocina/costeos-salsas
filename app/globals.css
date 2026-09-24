@@ -924,6 +924,13 @@ button {
 .sauce-summary .summary-expenses dd {
   color: #7b332e;
 }
+.sauce-summary .summary-production-cost {
+  background: #edf1ec;
+}
+.sauce-summary .summary-production-cost dt,
+.sauce-summary .summary-production-cost dd {
+  color: #243b2b;
+}
 .sauce-summary .summary-profit {
   border-top: 2px solid #273a2f;
   background: #f1f4ef;
