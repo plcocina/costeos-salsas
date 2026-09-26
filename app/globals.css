@@ -1165,6 +1165,15 @@ button {
   font-size: 11px;
   line-height: 1.5;
 }
+.services-calculation-copy {
+  display: grid;
+  gap: 6px;
+}
+.services-calculation-copy small {
+  color: #536756;
+  font-size: 11px;
+  line-height: 1.5;
+}
 .services-calculation button {
   flex: none;
   padding: 6px 9px;
