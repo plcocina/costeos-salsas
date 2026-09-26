@@ -1328,7 +1328,7 @@ function ReportApp({
                       <span>{serviceError ? 'No fue posible leer SERVICIOS 2026. Puedes capturar el importe manualmente.' : 'Consultando Luz, Agua y Gas de SERVICIOS 2026…'}</span>
                     )}
                     <small>
-                      Cálculo: importe de cada recibo ÷ días de su periodo × porcentaje de Salsas (Metodología PL1). Sumamos los 7 días de la semana; si aún no hay un recibo nuevo, usamos el último costo diario. Puedes editar Servicios.
+                      Cálculo: importe de cada recibo ÷ días de su periodo × porcentaje de Salsas. Sumamos los 7 días de la semana; si aún no hay un recibo nuevo, usamos el último costo diario.
                     </small>
                   </div>
                   {serviceWeeks?.[week.id] && activeSettings.servicesManual && (
