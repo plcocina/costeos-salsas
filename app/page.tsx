@@ -1317,19 +1317,22 @@ function ReportApp({
                   ))}
                 </div>
                 <div className="services-calculation" role="status">
-                  {serviceWeeks?.[week.id] ? (
-                    <>
+                  <div className="services-calculation-copy">
+                    {serviceWeeks?.[week.id] ? (
                       <span>
                         Servicios para Salsas: Luz {money(serviceWeeks[week.id].luz, 2)} · Agua {money(serviceWeeks[week.id].agua, 2)} · Gas {money(serviceWeeks[week.id].gas, 2)}.
                         {activeSettings.servicesManual ? ' El importe del campo fue editado.' : ' Importe calculado automáticamente.'}
                         {serviceError ? ' Se conserva el último cálculo guardado.' : ''}
                       </span>
-                      {activeSettings.servicesManual && (
-                        <button type="button" onClick={useAutomaticServices}>Usar cálculo automático</button>
-                      )}
-                    </>
-                  ) : (
-                    <span>{serviceError ? 'No fue posible leer SERVICIOS 2026. Puedes capturar el importe manualmente.' : 'Consultando Luz, Agua y Gas de SERVICIOS 2026…'}</span>
+                    ) : (
+                      <span>{serviceError ? 'No fue posible leer SERVICIOS 2026. Puedes capturar el importe manualmente.' : 'Consultando Luz, Agua y Gas de SERVICIOS 2026…'}</span>
+                    )}
+                    <small>
+                      Cálculo: importe de cada recibo ÷ días de su periodo × porcentaje de Salsas (Metodología PL1). Sumamos los 7 días de la semana; si aún no hay un recibo nuevo, usamos el último costo diario. Puedes editar Servicios.
+                    </small>
+                  </div>
+                  {serviceWeeks?.[week.id] && activeSettings.servicesManual && (
+                    <button type="button" onClick={useAutomaticServices}>Usar cálculo automático</button>
                   )}
                 </div>
               </fieldset>
