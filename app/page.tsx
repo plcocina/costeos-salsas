@@ -1543,6 +1543,7 @@ function ReportApp({
                     dataKey="revenue"
                     name="Ingresos"
                     fill="#163D2A"
+                    stackId="revenue"
                     radius={[7, 7, 0, 0]}
                   />
                   <Bar
