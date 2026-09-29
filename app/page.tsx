@@ -1429,11 +1429,10 @@ function ReportApp({
               <div className="grand-total-grid">
                 <div><span>Cubetas vendidas</span><strong>{integer(weeklyCombined.sales)}</strong></div>
                 <div><span>Cubetas producidas</span><strong>{integer(weeklyCombined.production)}</strong></div>
-                <div><span>Costo de materia prima</span><strong>{money(weeklyCombined.cost, 2)}</strong></div>
-                <div><span>Ingresos</span><strong>{money(weeklyCombined.revenue, 2)}</strong></div>
+                <div><span>Ingresos totales</span><strong>{money(weeklyCombined.revenue, 2)}</strong></div>
+                <div><span>Costo materia prima</span><strong>{money(weeklyCombined.cost, 2)}</strong></div>
                 <div><span>Gastos semanales</span><strong>{money(weeklyExpenses, 2)}</strong></div>
-                <div><span>Costo de producción total</span><strong>{money(weeklyCombined.cost + weeklyExpenses, 2)}</strong></div>
-                <div className="grand-net"><span>Utilidad neta total</span><strong className={weeklyNet < 0 ? 'loss' : 'profit'}>{money(weeklyNet, 2)}</strong></div>
+                <div><span>Total de costo de producción</span><strong>{money(weeklyCombined.cost + weeklyExpenses, 2)}</strong></div>
               </div>
             </section>
           </>
