@@ -1053,15 +1053,7 @@ button {
   font-size: clamp(14px, 1.25vw, 20px);
   white-space: nowrap;
 }
-.grand-total-grid .grand-net {
-  background: #e5eedf;
-}
-.grand-total-grid .grand-net span,
-.grand-total-grid .grand-net strong {
-  color: #173b2a;
-}
-.grand-total-heading > strong.loss,
-.grand-total-grid .grand-net strong.loss {
+.grand-total-heading > strong.loss {
   color: #bd3a31;
 }
 .summary-mix-panel {
@@ -1997,6 +1989,9 @@ footer {
   }
   .grand-total-grid > div:nth-child(even) {
     border-right: 0;
+  }
+  .grand-total-grid > div:nth-last-child(-n + 2) {
+    border-bottom: 0;
   }
 }
 
