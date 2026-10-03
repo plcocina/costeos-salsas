@@ -16,6 +16,41 @@ const WATER_COST = 0.178;
 const DAY_MS = 86_400_000;
 const firstMonday = Date.UTC(2025, 11, 29);
 const monthTokens = ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC'];
+const monthNames = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+const dayNames = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+
+const lastFinishedSunday = () => {
+  const today = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Monterrey', year: 'numeric', month: '2-digit', day: '2-digit',
+  }).format(new Date());
+  const midnight = Date.parse(`${today}T00:00:00Z`);
+  const day = new Date(midnight).getUTCDay();
+  return Math.min(midnight - (day === 0 ? 7 : day) * DAY_MS, Date.UTC(2026, 11, 27));
+};
+
+const makeEmptySauce = () => ({
+  sales: Array(7).fill(0) as number[], production: Array(7).fill(0) as number[],
+  cost: Array(7).fill(0) as number[], revenue: Array(7).fill(0) as number[],
+  profit: Array(7).fill(0) as number[], ingredients: Array.from({ length: 7 }, () => [] as Ingredient[]),
+});
+
+const makeWeek = (index: number) => {
+  const monday = new Date(firstMonday + index * 7 * DAY_MS);
+  const sunday = new Date(firstMonday + (index * 7 + 6) * DAY_MS);
+  const startMonth = monthTokens[monday.getUTCMonth()].toLowerCase();
+  const endMonth = monthTokens[sunday.getUTCMonth()].toLowerCase();
+  const short = monday.getUTCMonth() === sunday.getUTCMonth()
+    ? `${monday.getUTCDate()}–${sunday.getUTCDate()} ${endMonth}`
+    : `${monday.getUTCDate()} ${startMonth}–${sunday.getUTCDate()} ${endMonth}`;
+  return {
+    id: `S${index + 1}`, label: `Semana ${index + 1} · ${short}`, short,
+    dates: Array.from({ length: 7 }, (_, day) => {
+      const date = new Date(firstMonday + (index * 7 + day) * DAY_MS);
+      return `${dayNames[date.getUTCDay()]} ${date.getUTCDate()}`;
+    }),
+    verde: makeEmptySauce(), roja: makeEmptySauce(), molca: makeEmptySauce(),
+  };
+};
 
 const productionSheets: Record<SauceKey, { id: string; gids: number[] }> = {
   verde: {
@@ -84,6 +119,16 @@ const fetchCsv = async (id: string, gid: number) => {
   return parseCsv(await response.text());
 };
 
+const fetchCsvBySheet = async (id: string, sheet: string) => {
+  const response = await fetch(
+    `https://docs.google.com/spreadsheets/d/${id}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(sheet)}&_=${Date.now()}`,
+    { cache: 'no-store' },
+  );
+  if (!response.ok) return null;
+  const rows = parseCsv(await response.text());
+  return rows.length > 2 ? rows : null;
+};
+
 const dateKey = (month: number, day: number) => Date.UTC(2026, month, day);
 const dayFromLabel = (value: string | undefined) => {
   const match = value?.match(/(\d{1,2})(?!.*\d)/);
@@ -126,17 +171,36 @@ const parseWeekStart = (value: string) => {
 
 export async function GET() {
   try {
-    const productionRequests = (Object.keys(productionSheets) as SauceKey[]).flatMap((sauce) =>
-      productionSheets[sauce].gids.map((gid, month) =>
-        fetchCsv(productionSheets[sauce].id, gid).then((rows) => ({ sauce, month, rows })),
-      ),
-    );
-    const vegetableRequests = vegetableGids.map((gid, month) =>
-      fetchCsv('17oCqRPNB1mMHY5D-kt5c5UEtf3bprvKC292ovBvq7KA', gid).then((rows) => ({ month, rows })),
-    );
-    const salesRequests = salePriceGids.map((gid, month) =>
-      fetchCsv('1mnTOi04lPvTAPql1rqBOGUm6ro_mN3HevIcgJBpBDXI', gid).then((rows) => ({ month, rows })),
-    );
+    const latestSunday = lastFinishedSunday();
+    const latestMonth = new Date(latestSunday).getUTCMonth();
+    const productionRequests = (Object.keys(productionSheets) as SauceKey[]).flatMap((sauce) => [
+      ...productionSheets[sauce].gids.map((gid, month) =>
+        fetchCsv(productionSheets[sauce].id, gid).then((rows) => ({ sauce, month, rows }))),
+      ...Array.from({ length: Math.max(0, latestMonth - productionSheets[sauce].gids.length + 1) }, (_, offset) => {
+        const month = productionSheets[sauce].gids.length + offset;
+        return fetchCsvBySheet(productionSheets[sauce].id, monthTokens[month])
+          .then((rows) => rows ? { sauce, month, rows } : null)
+          .catch(() => null);
+      }),
+    ]);
+    const vegetableRequests = [
+      ...vegetableGids.map((gid, month) =>
+        fetchCsv('17oCqRPNB1mMHY5D-kt5c5UEtf3bprvKC292ovBvq7KA', gid).then((rows) => ({ month, rows }))),
+      ...Array.from({ length: Math.max(0, latestMonth - vegetableGids.length + 1) }, (_, offset) => {
+        const month = vegetableGids.length + offset;
+        return fetchCsvBySheet('17oCqRPNB1mMHY5D-kt5c5UEtf3bprvKC292ovBvq7KA', monthTokens[month])
+          .then((rows) => rows ? { month, rows } : null).catch(() => null);
+      }),
+    ];
+    const salesRequests = [
+      ...salePriceGids.map((gid, month) =>
+        fetchCsv('1mnTOi04lPvTAPql1rqBOGUm6ro_mN3HevIcgJBpBDXI', gid).then((rows) => ({ month, rows }))),
+      ...Array.from({ length: Math.max(0, latestMonth - salePriceGids.length + 1) }, (_, offset) => {
+        const month = salePriceGids.length + offset;
+        return fetchCsvBySheet('1mnTOi04lPvTAPql1rqBOGUm6ro_mN3HevIcgJBpBDXI', monthNames[month].toUpperCase())
+          .then((rows) => rows ? { month, rows } : null).catch(() => null);
+      }),
+    ];
     const [productionTabs, vegetableTabs, salesTabs, purchases] = await Promise.all([
       Promise.all(productionRequests),
       Promise.all(vegetableRequests),
@@ -145,7 +209,7 @@ export async function GET() {
     ]);
 
     const production = new Map<string, string[]>();
-    productionTabs.forEach(({ sauce, month, rows }) => {
+    productionTabs.filter((tab): tab is NonNullable<typeof tab> => tab !== null).forEach(({ sauce, month, rows }) => {
       rows.slice(2).forEach((row) => {
         const day = dayFromLabel(row[0]);
         const key = `${sauce}-${month}-${day}`;
@@ -166,7 +230,7 @@ export async function GET() {
     const vegetablePrices: Record<string, PriceEvent[]> = Object.fromEntries(
       Object.keys(vegetableColumns).map((key) => [key, []]),
     );
-    vegetableTabs.forEach(({ month, rows }) => {
+    vegetableTabs.filter((tab): tab is NonNullable<typeof tab> => tab !== null).forEach(({ month, rows }) => {
       rows.slice(1).forEach((row) => {
         Object.entries(vegetableColumns).forEach(([product, column]) => {
           const day = dayFromLabel(row[column]);
@@ -196,14 +260,41 @@ export async function GET() {
     });
     Object.values(purchasePrices).forEach((events) => events.sort((a, b) => a.date - b.date));
 
-    const report = structuredClone(baseReport);
+    const report = structuredClone(baseReport) as Omit<typeof baseReport, 'salePrices' | 'monthWeeks'> & {
+      salePrices: Record<string, Record<SauceKey, number>>;
+      monthWeeks: Record<string, string[]>;
+      latestCompleteWeekId?: string;
+    };
+    for (let index = report.weeks.length; firstMonday + (index * 7 + 6) * DAY_MS <= latestSunday; index += 1) {
+      const complete = Array.from({ length: 7 }, (_, day) => {
+        const date = new Date(firstMonday + (index * 7 + day) * DAY_MS);
+        return (Object.keys(productionSheets) as SauceKey[]).every((sauce) =>
+          !!production.get(`${sauce}-${date.getUTCMonth()}-${date.getUTCDate()}`)?.[2]?.trim());
+      }).every(Boolean);
+      if (!complete) break;
+      const week = makeWeek(index);
+      report.weeks.push(week);
+      const monthName = monthNames[new Date(firstMonday + (index * 7 + 6) * DAY_MS).getUTCMonth()];
+      report.monthWeeks[monthName] ??= [];
+      report.monthWeeks[monthName].push(week.id);
+      report.salePrices[week.id] = { ...report.salePrices[`S${index}`] };
+    }
+    for (let index = report.weeks.length - 1; index >= 0; index -= 1) {
+      if (firstMonday + (index * 7 + 6) * DAY_MS > latestSunday) continue;
+      const complete = Array.from({ length: 7 }, (_, day) => {
+        const date = new Date(firstMonday + (index * 7 + day) * DAY_MS);
+        return (Object.keys(productionSheets) as SauceKey[]).every((sauce) =>
+          !!production.get(`${sauce}-${date.getUTCMonth()}-${date.getUTCDate()}`)?.[2]?.trim());
+      }).every(Boolean);
+      if (complete) { report.latestCompleteWeekId = report.weeks[index].id; break; }
+    }
     const weeksByStart = new Map<string, string>();
     report.weeks.forEach((week, index) => {
       const monday = new Date(firstMonday + index * 7 * DAY_MS);
       weeksByStart.set(`${monday.getUTCMonth()}-${monday.getUTCDate()}`, week.id);
     });
 
-    salesTabs.forEach(({ rows }) => {
+    salesTabs.filter((tab): tab is NonNullable<typeof tab> => tab !== null).forEach(({ rows }) => {
       const priceRows: Partial<Record<SauceKey, string[]>> = {};
       rows.forEach((row) => {
         const product = (row[0] || '').toUpperCase();
@@ -230,7 +321,7 @@ export async function GET() {
         const date = new Date(timestamp);
         const month = date.getUTCMonth();
         const day = date.getUTCDate();
-        if (date.getUTCFullYear() !== 2026 || month > 8) return;
+        if (date.getUTCFullYear() !== 2026) return;
 
         (['verde', 'roja', 'molca'] as const).forEach((sauce) => {
           const row = production.get(`${sauce}-${month}-${day}`);
