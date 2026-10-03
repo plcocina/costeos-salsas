@@ -438,6 +438,24 @@ button {
   font-size: 13px;
   font-weight: 700;
 }
+.latest-week-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid #b8caa9;
+  border-radius: 10px;
+  background: #edf3e8;
+  color: #234631;
+  padding: 10px 13px;
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+.latest-week-button:disabled {
+  cursor: wait;
+  opacity: 0.72;
+}
 .sync-button:disabled {
   cursor: wait;
   opacity: 0.72;
@@ -1902,6 +1920,9 @@ footer {
   .sync-button {
     font-size: 0;
   }
+  .latest-week-button {
+    font-size: 0;
+  }
   .sync-button svg {
     margin: 0;
   }
@@ -2011,6 +2032,7 @@ footer {
   .filters,
   .monthly-filters-sticky,
   .topbar-actions,
+  .sync-notice,
   .report-toolbar,
   .weekly-result-tabs,
   footer {
