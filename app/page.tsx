@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import { GET as readGoogleSheets } from './api/sync/route';
 import { fetchServiceWeekCosts, type ServiceWeekCosts } from './service-costs';
+import { fetchLaborWeekCosts, type LaborWeekCosts } from './labor-costs';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Select,
@@ -87,6 +88,7 @@ type ReportData = {
 
 const REPORT_CACHE_KEY = 'pl-cocina-report-data-v1';
 const SERVICE_CACHE_KEY = 'pl-cocina-service-costs-v1';
+const LABOR_CACHE_KEY = 'pl-cocina-labor-costs-v1';
 type CachedReport = { savedAt: string; data: ReportData };
 
 const isReportData = (value: unknown): value is ReportData => {
@@ -110,6 +112,7 @@ type WeekSettings = {
   payroll: number;
   overtime: number;
   bonuses: number;
+  laborManual?: Partial<Record<'payroll' | 'overtime' | 'bonuses', boolean>>;
   completed: boolean;
 };
 
@@ -123,6 +126,7 @@ const makeWeekSettings = (
   payroll: 0,
   overtime: 0,
   bonuses: 0,
+  laborManual: {},
   completed: true,
 });
 const weeklyExpenseTotal = (settings: WeekSettings) =>
@@ -538,6 +542,8 @@ function ReportApp({
   reportData,
   serviceWeeks,
   serviceError,
+  laborWeeks,
+  laborError,
   onSync,
   syncing,
   syncNotice,
@@ -545,6 +551,8 @@ function ReportApp({
   reportData: ReportData;
   serviceWeeks: ServiceWeekCosts | null;
   serviceError: boolean;
+  laborWeeks: LaborWeekCosts | null;
+  laborError: boolean;
   onSync: (latest?: boolean) => Promise<string | null>;
   syncing: boolean;
   syncNotice: { tone: 'success' | 'error'; message: string } | null;
@@ -552,7 +560,8 @@ function ReportApp({
   const weeks = reportData.weeks;
   const monthWeeks = reportData.monthWeeks;
   const defaultSettingsForWeek = (id: string) =>
-    makeWeekSettings(reportData.salePrices[id], serviceWeeks?.[id]?.total ?? 0);
+    ({ ...makeWeekSettings(reportData.salePrices[id], serviceWeeks?.[id]?.total ?? 0),
+      ...laborWeeks?.[id] });
   const [view, setView] = useState<ReportView>('week');
   const [reportMonth, setReportMonth] = useState<ReportMonth>('septiembre');
   const [weekId, setWeekId] = useState(reportData.latestCompleteWeekId || weeks.at(-1)?.id || 'S38');
@@ -581,6 +590,11 @@ function ReportApp({
               const defaults = defaultSettingsForWeek(item.id);
               const savedSettings = parsed[item.id];
               const servicesManual = savedSettings?.servicesManual ?? (savedSettings?.services ?? 0) > 0;
+              const laborManual = savedSettings?.laborManual ?? {
+                payroll: (savedSettings?.payroll ?? 0) > 0,
+                overtime: (savedSettings?.overtime ?? 0) > 0,
+                bonuses: (savedSettings?.bonuses ?? 0) > 0,
+              };
               return [
                 item.id,
                 {
@@ -600,7 +614,10 @@ function ReportApp({
                         ? savedSettings.prices.molca
                         : defaults.prices.molca,
                   },
-                  bonuses: savedSettings?.bonuses ?? 0,
+                  payroll: laborManual.payroll ? savedSettings?.payroll ?? 0 : defaults.payroll,
+                  overtime: laborManual.overtime ? savedSettings?.overtime ?? 0 : defaults.overtime,
+                  bonuses: laborManual.bonuses ? savedSettings?.bonuses ?? 0 : defaults.bonuses,
+                  laborManual,
                   services: servicesManual ? savedSettings?.services ?? 0 : defaults.services,
                   servicesManual,
                   completed: true,
@@ -633,6 +650,22 @@ function ReportApp({
       }),
     ));
   }, [settingsReady, serviceWeeks]);
+  useEffect(() => {
+    if (!settingsReady || !laborWeeks) return;
+    setWeekSettings((current) => Object.fromEntries(
+      weeks.map((item) => {
+        const saved = current[item.id] || defaultSettingsForWeek(item.id);
+        const source = laborWeeks[item.id];
+        if (!source) return [item.id, saved];
+        return [item.id, {
+          ...saved,
+          payroll: saved.laborManual?.payroll ? saved.payroll : source.payroll,
+          overtime: saved.laborManual?.overtime ? saved.overtime : source.overtime,
+          bonuses: saved.laborManual?.bonuses ? saved.bonuses : source.bonuses,
+        }];
+      }),
+    ));
+  }, [settingsReady, laborWeeks]);
   useEffect(() => {
     const previous = previousSalePrices.current;
     setWeekSettings((current) =>
@@ -732,10 +765,10 @@ function ReportApp({
   const reportReady = activeSettings.completed && !editingSettings;
   useEffect(() => {
     if (!printWeekWhenReady || syncing || weekId !== printWeekWhenReady ||
-      !reportReady || !serviceWeeks?.[printWeekWhenReady] || !weekSettings[printWeekWhenReady]) return;
+      !reportReady || !serviceWeeks?.[printWeekWhenReady] || !laborWeeks?.[printWeekWhenReady] || !weekSettings[printWeekWhenReady]) return;
     setPrintWeekWhenReady(null);
     requestAnimationFrame(() => requestAnimationFrame(() => window.print()));
-  }, [printWeekWhenReady, syncing, weekId, reportReady, serviceWeeks, weekSettings]);
+  }, [printWeekWhenReady, syncing, weekId, reportReady, serviceWeeks, laborWeeks, weekSettings]);
   const updateAndPrintLatestWeek = async () => {
     const latest = await onSync(true);
     if (!latest) return;
@@ -757,6 +790,9 @@ function ReportApp({
         ...(current[week.id] || defaultSettingsForWeek(week.id)),
         [field]: value,
         ...(field === 'services' ? { servicesManual: true } : {}),
+        ...(field !== 'services' ? { laborManual: {
+          ...current[week.id]?.laborManual, [field]: true,
+        } } : {}),
       },
     }));
   };
@@ -767,6 +803,18 @@ function ReportApp({
         ...(current[week.id] || defaultSettingsForWeek(week.id)),
         services: serviceWeeks?.[week.id]?.total ?? 0,
         servicesManual: false,
+      },
+    }));
+  };
+  const useAutomaticLabor = () => {
+    const source = laborWeeks?.[week.id];
+    if (!source) return;
+    setWeekSettings((current) => ({
+      ...current,
+      [week.id]: {
+        ...(current[week.id] || defaultSettingsForWeek(week.id)),
+        ...source,
+        laborManual: {},
       },
     }));
   };
@@ -1350,6 +1398,16 @@ function ReportApp({
                       </div>
                     </label>
                   ))}
+                </div>
+                <div className="services-calculation" role="status">
+                  <div className="services-calculation-copy">
+                    <span>{laborWeeks?.[week.id]
+                      ? `Nómina, horas extras y bonos tomados de la hoja de gastos semanales.${laborError ? ' Se conservan los últimos importes guardados.' : ''}`
+                      : laborError ? 'No fue posible leer la hoja de gastos semanales. Puedes capturar los importes manualmente.' : 'Consultando nómina, horas extras y bonos…'}</span>
+                  </div>
+                  {laborWeeks?.[week.id] && Object.values(activeSettings.laborManual || {}).some(Boolean) && (
+                    <button type="button" onClick={useAutomaticLabor}>Usar importes de la hoja</button>
+                  )}
                 </div>
                 <div className="services-calculation" role="status">
                   <div className="services-calculation-copy">
@@ -2003,6 +2061,8 @@ export default function Home() {
   const [reportData, setReportData] = useState<ReportData | null>(null);
   const [serviceWeeks, setServiceWeeks] = useState<ServiceWeekCosts | null>(null);
   const [serviceError, setServiceError] = useState(false);
+  const [laborWeeks, setLaborWeeks] = useState<LaborWeekCosts | null>(null);
+  const [laborError, setLaborError] = useState(false);
   const [loadError, setLoadError] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [syncNotice, setSyncNotice] = useState<{
@@ -2015,6 +2075,8 @@ export default function Home() {
     try {
       const savedServices = window.localStorage.getItem(SERVICE_CACHE_KEY);
       if (savedServices) setServiceWeeks(JSON.parse(savedServices) as ServiceWeekCosts);
+      const savedLabor = window.localStorage.getItem(LABOR_CACHE_KEY);
+      if (savedLabor) setLaborWeeks(JSON.parse(savedLabor) as LaborWeekCosts);
       const stored = window.localStorage.getItem(REPORT_CACHE_KEY);
       if (stored) {
         const cached = JSON.parse(stored) as Partial<CachedReport>;
@@ -2072,6 +2134,21 @@ export default function Home() {
     return () => { active = false; };
   }, [reportData]);
 
+  useEffect(() => {
+    if (!reportData) return;
+    let active = true;
+    setLaborError(false);
+    fetchLaborWeekCosts(reportData.weeks.length)
+      .then((costs) => {
+        if (!active) return;
+        setLaborWeeks(costs);
+        setLaborError(false);
+        try { window.localStorage.setItem(LABOR_CACHE_KEY, JSON.stringify(costs)); } catch { /* Sigue con los datos en memoria. */ }
+      })
+      .catch(() => { if (active) setLaborError(true); });
+    return () => { active = false; };
+  }, [reportData]);
+
   const syncSheets = async (latest = false): Promise<string | null> => {
     setSyncing(true);
     setSyncNotice(null);
@@ -2086,11 +2163,18 @@ export default function Home() {
         throw new Error('Aún no hay una semana completa con los siete días capturados para las tres salsas.');
       }
       if (latest) {
-        const costs = await fetchServiceWeekCosts(data.weeks.length);
+        const [costs, laborCosts] = await Promise.all([
+          fetchServiceWeekCosts(data.weeks.length),
+          fetchLaborWeekCosts(data.weeks.length),
+        ]);
         if (!costs[latestWeekId!]) throw new Error('No se pudieron calcular los servicios de la última semana.');
+        if (!laborCosts[latestWeekId!]) throw new Error('No se encontraron nómina, horas extras y bonos de la última semana.');
         setServiceWeeks(costs);
+        setLaborWeeks(laborCosts);
         setServiceError(false);
+        setLaborError(false);
         try { window.localStorage.setItem(SERVICE_CACHE_KEY, JSON.stringify(costs)); } catch { /* Sigue con los datos en memoria. */ }
+        try { window.localStorage.setItem(LABOR_CACHE_KEY, JSON.stringify(laborCosts)); } catch { /* Sigue con los datos en memoria. */ }
       }
       const savedAt = new Date().toISOString();
       window.localStorage.setItem(
@@ -2138,6 +2222,8 @@ export default function Home() {
       reportData={reportData}
       serviceWeeks={serviceWeeks}
       serviceError={serviceError}
+      laborWeeks={laborWeeks}
+      laborError={laborError}
       onSync={syncSheets}
       syncing={syncing}
       syncNotice={syncNotice}
