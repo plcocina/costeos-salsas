@@ -48,7 +48,10 @@ type ReportMonth =
   | 'junio'
   | 'julio'
   | 'agosto'
-  | 'septiembre';
+  | 'septiembre'
+  | 'octubre'
+  | 'noviembre'
+  | 'diciembre';
 type SauceData = {
   sales: number[];
   production: number[];
@@ -76,6 +79,7 @@ type Week = {
 };
 type ReportData = {
   generatedThrough: string;
+  latestCompleteWeekId?: string;
   weeks: Week[];
   monthWeeks: Record<string, string[]>;
   salePrices: Record<string, Record<Exclude<SauceKey, 'all'>, number>>;
@@ -140,6 +144,9 @@ const reportMonths: { id: ReportMonth; label: string }[] = [
   { id: 'julio', label: 'Julio' },
   { id: 'agosto', label: 'Agosto' },
   { id: 'septiembre', label: 'Septiembre' },
+  { id: 'octubre', label: 'Octubre' },
+  { id: 'noviembre', label: 'Noviembre' },
+  { id: 'diciembre', label: 'Diciembre' },
 ];
 const monthWeekLabel = (month: ReportMonth, monthWeeks: Record<string, string[]>) => {
   const ids = monthWeeks[month] || [];
@@ -538,7 +545,7 @@ function ReportApp({
   reportData: ReportData;
   serviceWeeks: ServiceWeekCosts | null;
   serviceError: boolean;
-  onSync: () => void;
+  onSync: (latest?: boolean) => Promise<string | null>;
   syncing: boolean;
   syncNotice: { tone: 'success' | 'error'; message: string } | null;
 }) {
@@ -548,7 +555,7 @@ function ReportApp({
     makeWeekSettings(reportData.salePrices[id], serviceWeeks?.[id]?.total ?? 0);
   const [view, setView] = useState<ReportView>('week');
   const [reportMonth, setReportMonth] = useState<ReportMonth>('septiembre');
-  const [weekId, setWeekId] = useState('S38');
+  const [weekId, setWeekId] = useState(reportData.latestCompleteWeekId || weeks.at(-1)?.id || 'S38');
   const [sauce, setSauce] = useState<SauceKey>('all');
   const [weeklyResultView, setWeeklyResultView] =
     useState<WeeklyResultView>('summary');
@@ -560,6 +567,7 @@ function ReportApp({
   );
   const [settingsReady, setSettingsReady] = useState(false);
   const [editingSettings, setEditingSettings] = useState(false);
+  const [printWeekWhenReady, setPrintWeekWhenReady] = useState<string | null>(null);
   const [formError, setFormError] = useState('');
   const previousSalePrices = useRef(reportData.salePrices);
   useEffect(() => {
@@ -722,6 +730,23 @@ function ReportApp({
     return date && date > latest ? date : latest;
   }, '');
   const reportReady = activeSettings.completed && !editingSettings;
+  useEffect(() => {
+    if (!printWeekWhenReady || syncing || weekId !== printWeekWhenReady ||
+      !reportReady || !serviceWeeks?.[printWeekWhenReady] || !weekSettings[printWeekWhenReady]) return;
+    setPrintWeekWhenReady(null);
+    requestAnimationFrame(() => requestAnimationFrame(() => window.print()));
+  }, [printWeekWhenReady, syncing, weekId, reportReady, serviceWeeks, weekSettings]);
+  const updateAndPrintLatestWeek = async () => {
+    const latest = await onSync(true);
+    if (!latest) return;
+    setView('week');
+    setWeekId(latest);
+    setSauce('all');
+    setWeeklyResultView('summary');
+    setEditingSettings(false);
+    setFormError('');
+    setPrintWeekWhenReady(latest);
+  };
   const updateSetting = (
     field: 'services' | 'payroll' | 'overtime' | 'bonuses',
     value: number,
@@ -1005,6 +1030,16 @@ function ReportApp({
             <h1>Costeo de salsas</h1>
           </div>
           <div className="topbar-actions">
+            <button
+              className="latest-week-button"
+              onClick={updateAndPrintLatestWeek}
+              disabled={syncing}
+              title="Actualizar la última semana con siete días capturados y abrir la impresión"
+              aria-label="Actualizar e imprimir última semana completa"
+            >
+              <CalendarDays size={16} />
+              {syncing ? 'Buscando última semana…' : 'Actualizar e imprimir última semana'}
+            </button>
             {(reportReady || view === 'trends' || view === 'materials') && (
               <button className="pdf-button" onClick={() => window.print()}>
                 <FileDown size={16} />
@@ -1013,7 +1048,7 @@ function ReportApp({
             )}
             <button
               className={`sync-button ${syncing ? 'syncing' : ''}`}
-              onClick={onSync}
+              onClick={() => void onSync()}
               disabled={syncing}
               title="Volver a leer las hojas operativas de Google Sheets"
             >
@@ -1082,7 +1117,7 @@ function ReportApp({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="report-select-menu">
-                  {reportMonths.map((month) => (
+                  {reportMonths.filter((month) => monthWeeks[month.id]?.length).map((month) => (
                     <SelectItem key={month.id} value={month.id}>
                       {month.label} · {monthWeekLabel(month.id, monthWeeks)}
                     </SelectItem>
@@ -2037,7 +2072,7 @@ export default function Home() {
     return () => { active = false; };
   }, [reportData]);
 
-  const syncSheets = async () => {
+  const syncSheets = async (latest = false): Promise<string | null> => {
     setSyncing(true);
     setSyncNotice(null);
     try {
@@ -2046,6 +2081,17 @@ export default function Home() {
       const response = await readGoogleSheets();
       const data = (await response.json()) as ReportData & { error?: string };
       if (!response.ok) throw new Error(data.error || 'No fue posible actualizar las hojas.');
+      const latestWeekId = data.latestCompleteWeekId;
+      if (latest && !latestWeekId) {
+        throw new Error('Aún no hay una semana completa con los siete días capturados para las tres salsas.');
+      }
+      if (latest) {
+        const costs = await fetchServiceWeekCosts(data.weeks.length);
+        if (!costs[latestWeekId!]) throw new Error('No se pudieron calcular los servicios de la última semana.');
+        setServiceWeeks(costs);
+        setServiceError(false);
+        try { window.localStorage.setItem(SERVICE_CACHE_KEY, JSON.stringify(costs)); } catch { /* Sigue con los datos en memoria. */ }
+      }
       const savedAt = new Date().toISOString();
       window.localStorage.setItem(
         REPORT_CACHE_KEY,
@@ -2054,13 +2100,17 @@ export default function Home() {
       setReportData(data);
       setSyncNotice({
         tone: 'success',
-        message: `Datos actualizados y guardados · ${new Intl.DateTimeFormat('es-MX', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(savedAt))}`,
+        message: latest
+          ? `${latestWeekId} actualizada con siete días capturados. Abriendo impresión…`
+          : `Datos actualizados y guardados · ${new Intl.DateTimeFormat('es-MX', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(savedAt))}`,
       });
+      return latestWeekId || null;
     } catch (error) {
       setSyncNotice({
         tone: 'error',
         message: `${error instanceof Error ? error.message : 'No fue posible actualizar las hojas.'} Se conservaron los datos anteriores.`,
       });
+      return null;
     } finally {
       setSyncing(false);
     }
