@@ -304,7 +304,9 @@ export async function GET() {
       });
       const columnCount = Math.max(...rows.slice(0, 3).map((row) => row.length), 0);
       for (let column = 2; column < columnCount; column += 1) {
-        const start = parseWeekStart(rows[1]?.[column] || rows[0]?.[column] || '');
+        // El precio pertenece a la semana indicada por PLOG (fila 1).
+        // La fila PL COCINA desplaza esa misma columna a la semana siguiente.
+        const start = parseWeekStart(rows[0]?.[column] || '');
         if (!start) continue;
         const weekId = weeksByStart.get(`${start.month}-${start.day}`);
         if (!weekId || !report.salePrices[weekId]) continue;
