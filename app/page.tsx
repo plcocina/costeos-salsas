@@ -576,7 +576,6 @@ function ReportApp({
   );
   const [settingsReady, setSettingsReady] = useState(false);
   const [editingSettings, setEditingSettings] = useState(false);
-  const [printWeekWhenReady, setPrintWeekWhenReady] = useState<string | null>(null);
   const [formError, setFormError] = useState('');
   const previousSalePrices = useRef(reportData.salePrices);
   useEffect(() => {
@@ -763,13 +762,7 @@ function ReportApp({
     return date && date > latest ? date : latest;
   }, '');
   const reportReady = activeSettings.completed && !editingSettings;
-  useEffect(() => {
-    if (!printWeekWhenReady || syncing || weekId !== printWeekWhenReady ||
-      !reportReady || !serviceWeeks?.[printWeekWhenReady] || !laborWeeks?.[printWeekWhenReady] || !weekSettings[printWeekWhenReady]) return;
-    setPrintWeekWhenReady(null);
-    requestAnimationFrame(() => requestAnimationFrame(() => window.print()));
-  }, [printWeekWhenReady, syncing, weekId, reportReady, serviceWeeks, laborWeeks, weekSettings]);
-  const updateAndPrintLatestWeek = async () => {
+  const updateLatestReport = async () => {
     const latest = await onSync(true);
     if (!latest) return;
     setView('week');
@@ -778,7 +771,6 @@ function ReportApp({
     setWeeklyResultView('summary');
     setEditingSettings(false);
     setFormError('');
-    setPrintWeekWhenReady(latest);
   };
   const updateSetting = (
     field: 'services' | 'payroll' | 'overtime' | 'bonuses',
@@ -1080,13 +1072,13 @@ function ReportApp({
           <div className="topbar-actions">
             <button
               className="latest-week-button"
-              onClick={updateAndPrintLatestWeek}
+              onClick={updateLatestReport}
               disabled={syncing}
-              title="Actualizar la última semana con siete días capturados y abrir la impresión"
-              aria-label="Actualizar e imprimir última semana completa"
+              title="Actualizar el reporte con la última semana completa"
+              aria-label="Actualizar reporte de la última semana completa"
             >
               <CalendarDays size={16} />
-              {syncing ? 'Buscando última semana…' : 'Actualizar e imprimir última semana'}
+              {syncing ? 'Actualizando reporte…' : 'Actualizar Reporte'}
             </button>
             {(reportReady || view === 'trends' || view === 'materials') && (
               <button className="pdf-button" onClick={() => window.print()}>
@@ -2185,7 +2177,7 @@ export default function Home() {
       setSyncNotice({
         tone: 'success',
         message: latest
-          ? `${latestWeekId} actualizada con siete días capturados. Abriendo impresión…`
+          ? `${latestWeekId} actualizada con siete días capturados.`
           : `Datos actualizados y guardados · ${new Intl.DateTimeFormat('es-MX', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(savedAt))}`,
       });
       return latestWeekId || null;
