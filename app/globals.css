@@ -947,6 +947,13 @@ button {
 .sauce-summary .summary-production-cost dd {
   color: #a32620;
 }
+.sauce-summary .summary-merma {
+  background: #fbf1e8;
+}
+.sauce-summary .summary-merma dt,
+.sauce-summary .summary-merma dd {
+  color: #9c5427;
+}
 .sauce-summary .summary-profit {
   border-top: 2px solid #273a2f;
   background: #f1f4ef;
@@ -1043,7 +1050,7 @@ button {
 }
 .grand-total-grid {
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(7, minmax(0, 1fr));
 }
 .grand-total-grid > div {
   min-width: 0;
@@ -1146,6 +1153,12 @@ button {
 .three-fields {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
+.sauce-input-pair {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+}
+.sauce-input-pair > label { min-width: 0; }
 .four-fields {
   grid-template-columns: minmax(145px, 1.5fr) repeat(3, minmax(0, 1fr));
 }
