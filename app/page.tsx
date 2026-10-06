@@ -107,6 +107,7 @@ const isReportData = (value: unknown): value is ReportData => {
 
 type WeekSettings = {
   prices: Record<Exclude<SauceKey, 'all'>, number>;
+  merma: Record<Exclude<SauceKey, 'all'>, number>;
   services: number;
   servicesManual?: boolean;
   payroll: number;
@@ -121,6 +122,7 @@ const makeWeekSettings = (
   services = 0,
 ): WeekSettings => ({
   prices,
+  merma: { verde: 0, roja: 0, molca: 0 },
   services,
   servicesManual: false,
   payroll: 0,
@@ -131,6 +133,8 @@ const makeWeekSettings = (
 });
 const weeklyExpenseTotal = (settings: WeekSettings) =>
   settings.services + settings.payroll + settings.overtime + settings.bonuses;
+const mermaCost = (settings: WeekSettings, sauce: Exclude<SauceKey, 'all'>) =>
+  (settings.merma?.[sauce] || 0) * settings.prices[sauce];
 const sauceMeta = {
   verde: { label: 'Salsa verde', color: '#A8C957', ink: '#4E681A' },
   roja: { label: 'Salsa roja', color: '#E45C4E', ink: '#8F241D' },
@@ -374,6 +378,7 @@ type CostChartPoint = {
   payroll: number;
   overtime: number;
   bonuses: number;
+  merma: number;
 };
 
 function CostComparisonTooltip({ active, payload, daily }: {
@@ -391,7 +396,8 @@ function CostComparisonTooltip({ active, payload, daily }: {
       <div className="cost-tooltip-expenses"><span>Gastos {daily ? 'asignados al día' : 'semanales'}</span><b>{money(point.expenses, 2)}</b></div>
       <small>Servicios {money(point.services, 2)} · Nómina {money(point.payroll, 2)}<br />Horas extras {money(point.overtime, 2)} · Bonos {money(point.bonuses, 2)}</small>
       <div className="cost-tooltip-total"><span>Costo de producción (materia prima + gastos)</span><b>{money(point.cost + point.expenses, 2)}</b></div>
-      <div><span>Utilidad neta</span><b>{money(point.revenue - point.cost - point.expenses, 2)}</b></div>
+      {point.merma > 0 && <div><span>Merma {daily ? 'prorrateada al día' : 'semanal'}</span><b>{money(point.merma, 2)}</b></div>}
+      <div><span>Utilidad neta</span><b>{money(point.revenue - point.cost - point.expenses - point.merma, 2)}</b></div>
     </div>
   );
 }
@@ -452,7 +458,8 @@ function SauceResultCard({
   const cost = sum(data.cost);
   const revenue = sales * settings.prices[sauceKey];
   const contribution = revenue - cost;
-  const netProfit = contribution - sharedExpenses;
+  const lostValue = mermaCost(settings, sauceKey);
+  const netProfit = contribution - sharedExpenses - lostValue;
   const meta = sauceMeta[sauceKey];
 
   return (
@@ -494,6 +501,10 @@ function SauceResultCard({
         <div className="summary-production-cost">
           <dt>Costo de producción total</dt>
           <dd>{money(cost + sharedExpenses, 2)}</dd>
+        </div>
+        <div className="summary-merma">
+          <dt>(−) Merma ({integer(settings.merma[sauceKey])} {settings.merma[sauceKey] === 1 ? 'cubeta' : 'cubetas'})</dt>
+          <dd>{money(lostValue, 2)}</dd>
         </div>
         <div className="summary-profit">
           <dt>Utilidad neta</dt>
@@ -612,6 +623,11 @@ function ReportApp({
                       savedSettings?.prices?.molca > 0
                         ? savedSettings.prices.molca
                         : defaults.prices.molca,
+                  },
+                  merma: {
+                    verde: savedSettings?.merma?.verde ?? 0,
+                    roja: savedSettings?.merma?.roja ?? 0,
+                    molca: savedSettings?.merma?.molca ?? 0,
                   },
                   payroll: laborManual.payroll ? savedSettings?.payroll ?? 0 : defaults.payroll,
                   overtime: laborManual.overtime ? savedSettings?.overtime ?? 0 : defaults.overtime,
@@ -826,10 +842,27 @@ function ReportApp({
       };
     });
   };
+  const updateMerma = (key: Exclude<SauceKey, 'all'>, value: number) => {
+    setWeekSettings((current) => {
+      const settings = current[week.id] || defaultSettingsForWeek(week.id);
+      return {
+        ...current,
+        [week.id]: {
+          ...settings,
+          merma: { ...settings.merma, [key]: value },
+        },
+      };
+    });
+  };
   const calculateReport = () => {
     const prices = Object.values(activeSettings.prices);
     if (prices.some((price) => !Number.isFinite(price) || price <= 0)) {
       setFormError('Captura un precio mayor a cero para cada salsa.');
+      return;
+    }
+    if (Object.values(activeSettings.merma).some((value) =>
+      !Number.isInteger(value) || value < 0)) {
+      setFormError('Las cubetas mermadas deben ser números enteros no negativos.');
       return;
     }
     if (
@@ -850,7 +883,7 @@ function ReportApp({
     setWeeklyResultView('summary');
     setSauce('all');
   };
-  const selectedKeys =
+  const selectedKeys: Exclude<SauceKey, 'all'>[] =
     sauce === 'all' ? (['verde', 'roja', 'molca'] as const) : [sauce];
   const expenseShare = selectedKeys.length / 3;
   const totals = useMemo(() => {
@@ -859,7 +892,9 @@ function ReportApp({
       production = 0,
       cost = 0,
       revenue = 0,
-      gross = 0;
+      gross = 0,
+      lostValue = 0,
+      lostBuckets = 0;
     sourceWeeks.forEach((w) =>
       selectedKeys.forEach((key) => {
         sales += sum(w[key].sales);
@@ -867,6 +902,8 @@ function ReportApp({
         cost += sum(w[key].cost);
         const settings = weekSettings[w.id] || defaultSettingsForWeek(w.id);
         revenue += sum(w[key].sales) * settings.prices[key];
+        lostValue += mermaCost(settings, key);
+        lostBuckets += settings.merma?.[key] || 0;
       }),
     );
     gross = revenue - cost;
@@ -884,8 +921,10 @@ function ReportApp({
       cost,
       revenue,
       gross,
-      net: gross - fixed,
+      net: gross - fixed - lostValue,
       fixed,
+      lostValue,
+      lostBuckets,
       variance: production - sales,
     };
   }, [view, week, sauce, weekSettings, configuredWeeks, reportMonth]);
@@ -908,17 +947,19 @@ function ReportApp({
   const monthly = configuredWeeks.map((w) => {
     let cost = 0,
       revenue = 0,
-      profit = 0;
+      profit = 0,
+      lostValue = 0;
     selectedKeys.forEach((key) => {
       cost += sum(w[key].cost);
       const settings = weekSettings[w.id] || defaultSettingsForWeek(w.id);
       revenue += sum(w[key].sales) * settings.prices[key];
+      lostValue += mermaCost(settings, key);
     });
     const settings = weekSettings[w.id] || defaultSettingsForWeek(w.id);
     const expenses =
       weeklyExpenseTotal(settings) * (selectedKeys.length / 3);
-    profit = revenue - cost - expenses;
-    return { name: w.short, cost, revenue, profit, expenses };
+    profit = revenue - cost - expenses - lostValue;
+    return { name: w.short, cost, revenue, profit, expenses, merma: lostValue };
   });
   const weeklyCombined = (['verde', 'roja', 'molca'] as const).reduce(
     (result, key) => {
@@ -933,6 +974,12 @@ function ReportApp({
     { sales: 0, production: 0, cost: 0, revenue: 0 },
   );
   const weeklyExpenses = weeklyExpenseTotal(activeSettings);
+  const weeklyMerma = (['verde', 'roja', 'molca'] as const).reduce(
+    (total, key) => total + mermaCost(activeSettings, key), 0);
+  const weeklyMermaBuckets = (['verde', 'roja', 'molca'] as const).reduce(
+    (total, key) => total + (activeSettings.merma[key] || 0), 0);
+  const selectedMerma = selectedKeys.reduce(
+    (total, key) => total + mermaCost(activeSettings, key), 0);
   const costChartData: CostChartPoint[] = view === 'week'
     ? daily.map((row) => ({
         label: row.date,
@@ -943,6 +990,7 @@ function ReportApp({
         payroll: activeSettings.payroll * expenseShare / 7,
         overtime: activeSettings.overtime * expenseShare / 7,
         bonuses: activeSettings.bonuses * expenseShare / 7,
+        merma: selectedMerma / 7,
       }))
     : monthly.map((row, index) => {
         const settings = weekSettings[configuredWeeks[index].id] || defaultSettingsForWeek(configuredWeeks[index].id);
@@ -955,6 +1003,7 @@ function ReportApp({
           payroll: settings.payroll * expenseShare,
           overtime: settings.overtime * expenseShare,
           bonuses: settings.bonuses * expenseShare,
+          merma: row.merma,
         };
       });
   const weeksWithoutExpenses =
@@ -968,7 +1017,7 @@ function ReportApp({
           )
           .map((item) => item.id);
   const weeklyNet =
-    weeklyCombined.revenue - weeklyCombined.cost - weeklyExpenses;
+    weeklyCombined.revenue - weeklyCombined.cost - weeklyExpenses - weeklyMerma;
   const trendData = trendWeeks.map((item) => {
     const settings = weekSettings[item.id] || defaultSettingsForWeek(item.id);
     const sharedExpenses = weeklyExpenseTotal(settings) / 3;
@@ -981,7 +1030,7 @@ function ReportApp({
       const revenue = sales * settings.prices[key];
       point[`${key}Sales`] = sales;
       point[`${key}Revenue`] = revenue;
-      point[`${key}Net`] = revenue - sum(item[key].cost) - sharedExpenses;
+      point[`${key}Net`] = revenue - sum(item[key].cost) - sharedExpenses - mermaCost(settings, key);
       point[`${key}Price`] = settings.prices[key];
     });
     return point;
@@ -1330,7 +1379,7 @@ function ReportApp({
                 <p className="eyebrow">DATOS DE LA SEMANA · {week.id}</p>
                 <h2 id="weekly-inputs-title">Edita los datos del reporte</h2>
               </div>
-              <span>Precios y gastos semanales</span>
+              <span>Precios, mermas y gastos semanales</span>
             </div>
             <div className="input-groups">
               <fieldset>
@@ -1338,28 +1387,43 @@ function ReportApp({
                 <div className="field-row three-fields">
                   {(Object.keys(sauceMeta) as Exclude<SauceKey, 'all'>[]).map(
                     (key) => (
-                      <label key={key}>
-                        <span>{sauceMeta[key].label}</span>
-                        <div className="money-input">
-                          <b>$</b>
-                          <input
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            value={activeSettings.prices[key]}
-                            onChange={(event) =>
-                              updatePrice(key, Number(event.target.value) || 0)
-                            }
-                            aria-label={`Precio por cubeta de ${sauceMeta[key].label}`}
-                          />
-                        </div>
-                      </label>
+                      <div className="sauce-input-pair" key={key}>
+                        <label>
+                          <span>{sauceMeta[key].label}</span>
+                          <div className="money-input">
+                            <b>$</b>
+                            <input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              value={activeSettings.prices[key]}
+                              onChange={(event) =>
+                                updatePrice(key, Number(event.target.value) || 0)
+                              }
+                              aria-label={`Precio por cubeta de ${sauceMeta[key].label}`}
+                            />
+                          </div>
+                        </label>
+                        <label>
+                          <span>Cubetas mermadas</span>
+                          <div className="money-input">
+                            <input
+                              type="number"
+                              min="0"
+                              step="1"
+                              value={activeSettings.merma[key]}
+                              onChange={(event) => updateMerma(key, Number(event.target.value) || 0)}
+                              aria-label={`Cubetas mermadas de ${sauceMeta[key].label}`}
+                            />
+                          </div>
+                        </label>
+                      </div>
                     ),
                   )}
                 </div>
                 <small className="field-help">
                   Precios precargados desde PRECIOS PLOG. Puedes modificarlos
-                  para esta semana y actualizar el cálculo.
+                  para esta semana y actualizar el cálculo. Cada cubeta mermada descuenta su precio de la utilidad neta.
                 </small>
               </fieldset>
               <fieldset>
@@ -1518,6 +1582,7 @@ function ReportApp({
                 <div><span>Costo materia prima</span><strong>{money(weeklyCombined.cost, 2)}</strong></div>
                 <div><span>Gastos semanales</span><strong>{money(weeklyExpenses, 2)}</strong></div>
                 <div><span>Total de costo de producción</span><strong>{money(weeklyCombined.cost + weeklyExpenses, 2)}</strong></div>
+                <div><span>Merma · {integer(weeklyMermaBuckets)} {weeklyMermaBuckets === 1 ? 'cubeta' : 'cubetas'}</span><strong>{money(weeklyMerma, 2)}</strong></div>
               </div>
             </section>
           </>
@@ -1554,7 +1619,7 @@ function ReportApp({
             icon={<CircleDollarSign size={20} />}
             label="Utilidad neta"
             value={money(totals.net)}
-            note={`${money(totals.fixed)} en gastos semanales prorrateados`}
+            note={`${money(totals.fixed)} en gastos semanales${totals.lostValue ? ` · ${money(totals.lostValue)} en merma` : ''}`}
             tone="green"
           />
           <Metric
@@ -1932,6 +1997,7 @@ function ReportApp({
                     <th>Ingresos</th>
                     <th>Materia prima</th>
                     <th>Gastos semanales</th>
+                    <th>Merma</th>
                     <th>Utilidad neta</th>
                     <th>Margen</th>
                   </tr>
@@ -1945,6 +2011,7 @@ function ReportApp({
                       <td>{money(row.revenue)}</td>
                       <td>{money(row.cost)}</td>
                       <td>{money(row.expenses)}</td>
+                      <td>{money(row.merma)}</td>
                       <td>
                         <strong className={row.profit >= 0 ? 'profit' : 'loss'}>
                           {money(row.profit)}
