@@ -412,8 +412,9 @@ function WeeklySauceMenu({
   placement: 'sidebar' | 'workspace';
 }) {
   return (
-    <nav
+    <div
       className={`weekly-result-tabs ${placement}-weekly-tabs`}
+      role="group"
       aria-label="Vistas del reporte semanal"
     >
       {(
@@ -435,7 +436,7 @@ function WeeklySauceMenu({
           {label}
         </button>
       ))}
-    </nav>
+    </div>
   );
 }
 
@@ -1080,6 +1081,13 @@ function ReportApp({
             <CalendarDays size={17} />
             Reportes
           </button>
+        {view === 'week' && reportReady && (
+          <WeeklySauceMenu
+            value={weeklyResultView}
+            onSelect={selectWeeklyResult}
+            placement="sidebar"
+          />
+        )}
           <button
             type="button"
             className={view === 'trends' ? 'selected' : ''}
@@ -1099,13 +1107,6 @@ function ReportApp({
             Materia prima
           </button>
         </nav>
-        {view === 'week' && reportReady && (
-          <WeeklySauceMenu
-            value={weeklyResultView}
-            onSelect={selectWeeklyResult}
-            placement="sidebar"
-          />
-        )}
         <div className="source-status">
           <span className="status-dot" />
           <div>
