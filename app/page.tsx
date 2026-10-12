@@ -1075,6 +1075,7 @@ function ReportApp({
             type="button"
             className={view === 'week' || view === 'month' ? 'selected' : ''}
             onClick={() => setView('week')}
+            aria-current={view === 'week' || view === 'month' ? 'page' : undefined}
           >
             <CalendarDays size={17} />
             Reportes
@@ -1083,9 +1084,19 @@ function ReportApp({
             type="button"
             className={view === 'trends' ? 'selected' : ''}
             onClick={() => setView('trends')}
+            aria-current={view === 'trends' ? 'page' : undefined}
           >
             <TrendingUp size={17} />
             Tendencias
+          </button>
+          <button
+            type="button"
+            className={view === 'materials' ? 'selected' : ''}
+            onClick={() => setView('materials')}
+            aria-current={view === 'materials' ? 'page' : undefined}
+          >
+            <Package size={17} aria-hidden="true" />
+            Materia prima
           </button>
         </nav>
         {view === 'week' && reportReady && (
@@ -1095,15 +1106,6 @@ function ReportApp({
             placement="sidebar"
           />
         )}
-        <button
-          type="button"
-          className={`sidebar-materials-link ${view === 'materials' ? 'selected' : ''}`}
-          onClick={() => setView('materials')}
-          aria-current={view === 'materials' ? 'page' : undefined}
-        >
-          <Package size={17} aria-hidden="true" />
-          Materia prima
-        </button>
         <div className="source-status">
           <span className="status-dot" />
           <div>
