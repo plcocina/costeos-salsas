@@ -807,16 +807,19 @@ button {
   width: 100%;
   min-height: 45px;
   padding: 11px 13px;
+  border: 3px solid transparent;
+  border-radius: 12px;
   color: #d7d1ac;
   font-size: 14px;
   text-align: left;
 }
 .sidebar-weekly-tabs button.selected {
   background: #ffffff1c;
-  box-shadow: inset 3px 0 0 var(--lime);
+  border-color: var(--lime);
+  box-shadow: none;
   color: #fff;
 }
-.sidebar-weekly-tabs button:hover {
+.sidebar-weekly-tabs button:hover:not(.selected) {
   background: #ffffff13;
   color: #fff;
 }
