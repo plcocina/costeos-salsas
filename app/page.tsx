@@ -1081,13 +1081,13 @@ function ReportApp({
             <CalendarDays size={17} />
             Reportes
           </button>
-        {view === 'week' && reportReady && (
-          <WeeklySauceMenu
-            value={weeklyResultView}
-            onSelect={selectWeeklyResult}
-            placement="sidebar"
-          />
-        )}
+          {view === 'week' && reportReady && (
+            <WeeklySauceMenu
+              value={weeklyResultView}
+              onSelect={selectWeeklyResult}
+              placement="sidebar"
+            />
+          )}
           <button
             type="button"
             className={view === 'trends' ? 'selected' : ''}
