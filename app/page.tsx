@@ -1691,20 +1691,20 @@ function ReportApp({
                   <Bar
                     dataKey="revenue"
                     name="Ingresos"
-                    fill="#163D2A"
+                    fill="#2B2911"
                     stackId="revenue"
                     radius={[7, 7, 0, 0]}
                   />
                   <Bar
                     dataKey="cost"
                     name="Materia prima"
-                    fill="#A8C957"
+                    fill="#CEC861"
                     stackId="costs"
                   />
                   <Bar
                     dataKey="expenses"
                     name="Gastos semanales"
-                    fill="#E5A344"
+                    fill="#B88D32"
                     stackId="costs"
                     radius={[7, 7, 0, 0]}
                   />
