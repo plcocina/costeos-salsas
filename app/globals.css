@@ -775,7 +775,7 @@ button {
   display: grid;
   gap: 7px;
   margin: 0 0 6px 10px;
-  padding: 0;
+  padding: 0 0 0 5px;
   border: 0;
   border-left: 1px solid #ffffff30;
   border-radius: 0;
