@@ -79,7 +79,7 @@ button {
   gap: 7px;
   margin: 20px 0 8px;
 }
-.sidebar-main-nav button {
+.sidebar-main-nav > button {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -93,15 +93,15 @@ button {
   font-weight: 800;
   text-align: left;
 }
-.sidebar-main-nav button:hover {
+.sidebar-main-nav > button:hover {
   background: #ffffff0d;
 }
-.sidebar-main-nav button.selected {
+.sidebar-main-nav > button.selected {
   color: #fff;
   border-color: var(--lime);
   background: #ffffff1c;
 }
-.sidebar-main-nav button.selected svg {
+.sidebar-main-nav > button.selected svg {
   color: var(--lime);
 }
 .brand strong {
@@ -774,7 +774,7 @@ button {
 .sidebar-weekly-tabs {
   display: grid;
   gap: 7px;
-  margin: 18px 0 0 10px;
+  margin: 0 0 6px 10px;
   padding: 0;
   border: 0;
   border-left: 1px solid #ffffff30;
@@ -1862,11 +1862,11 @@ footer {
     gap: 6px;
     margin: 0 0 0 auto;
   }
-  .sidebar-main-nav button {
+  .sidebar-main-nav > button {
     width: auto;
     padding: 9px 10px;
   }
-  .sidebar-main-nav button svg { display: none; }
+  .sidebar-main-nav > button svg { display: none; }
   .brand {
     padding: 0;
     border: 0;
@@ -2107,7 +2107,7 @@ footer {
 }
 @media (max-width: 470px) {
   .brand strong { display: none; }
-  .sidebar-main-nav button {
+  .sidebar-main-nav > button {
     padding: 8px 7px;
     font-size: 11px;
     white-space: nowrap;
