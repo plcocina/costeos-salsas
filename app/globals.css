@@ -447,9 +447,9 @@ button {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  border: 1px solid #ded72b;
+  border: 1px solid #c9c38d;
   border-radius: 10px;
-  background: var(--lime);
+  background: #f2f0dd;
   color: var(--ink);
   padding: 10px 13px;
   font-size: 13px;
@@ -460,7 +460,7 @@ button {
   cursor: wait;
   opacity: 0.72;
 }
-.latest-week-button:hover:not(:disabled) { background: #e9e324; }
+.latest-week-button:hover:not(:disabled) { background: #eae7cc; }
 .sync-button:disabled {
   cursor: wait;
   opacity: 0.72;
