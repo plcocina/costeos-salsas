@@ -1273,7 +1273,7 @@ function ReportApp({
                             <LineChart data={series.points} margin={{ top: 12, right: 12, left: 0, bottom: 0 }}>
                               <CartesianGrid vertical={false} stroke="#E8E9E4" strokeDasharray="4 4" />
                               <XAxis dataKey="date" axisLine={false} tickLine={false} minTickGap={32} tick={{ fill: '#68706B', fontSize: 11 }} tickFormatter={shortDate} />
-                              <YAxis axisLine={false} tickLine={false} width={56} domain={['auto', 'auto']} tick={{ fill: '#89908B', fontSize: 11 }} tickFormatter={(value) => money(Number(value), Number(value) < 1 ? 2 : 0)} />
+                              <YAxis axisLine={false} tickLine={false} width={56} domain={['auto', 'auto']} tick={{ fill: '#928E7A', fontSize: 11 }} tickFormatter={(value) => money(Number(value), Number(value) < 1 ? 2 : 0)} />
                               <Tooltip content={(props) => <IngredientPriceTooltip active={props.active} payload={props.payload as readonly { payload?: { date: string; price: number } }[]} />} />
                               <Line type="stepAfter" dataKey="price" stroke={sauceMeta[key].color} strokeWidth={2.5} dot={false} activeDot={{ r: 5 }} isAnimationActive={false} />
                             </LineChart>
@@ -1674,12 +1674,29 @@ function ReportApp({
                   barGap={5}
                   margin={{ top: 8, right: 4, left: 4, bottom: 0 }}
                 >
-                  <CartesianGrid vertical={false} stroke="#E8E9E4" />
+                  <defs>
+                    <linearGradient id="cost-chart-revenue" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#F05FA9" />
+                      <stop offset="52%" stopColor="#EC2192" />
+                      <stop offset="100%" stopColor="#E0007A" />
+                    </linearGradient>
+                    <linearGradient id="cost-chart-materials" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#20B8E5" />
+                      <stop offset="52%" stopColor="#1796D3" />
+                      <stop offset="100%" stopColor="#046EB8" />
+                    </linearGradient>
+                    <linearGradient id="cost-chart-expenses" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#B14AA6" />
+                      <stop offset="52%" stopColor="#93278D" />
+                      <stop offset="100%" stopColor="#751D7B" />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid vertical={false} stroke="#E0DDC9" />
                   <XAxis
                     dataKey="label"
                     axisLine={false}
                     tickLine={false}
-                    tick={{ fill: '#68706B', fontSize: 12 }}
+                    tick={{ fill: '#716E5B', fontSize: 12 }}
                   />
                   <YAxis
                     axisLine={false}
@@ -1694,20 +1711,20 @@ function ReportApp({
                   <Bar
                     dataKey="revenue"
                     name="Ingresos"
-                    fill="#2B2911"
+                    fill="url(#cost-chart-revenue)"
                     stackId="revenue"
                     radius={[7, 7, 0, 0]}
                   />
                   <Bar
                     dataKey="cost"
                     name="Materia prima"
-                    fill="#CEC861"
+                    fill="url(#cost-chart-materials)"
                     stackId="costs"
                   />
                   <Bar
                     dataKey="expenses"
                     name="Gastos semanales"
-                    fill="#B88D32"
+                    fill="url(#cost-chart-expenses)"
                     stackId="costs"
                     radius={[7, 7, 0, 0]}
                   />
@@ -1716,11 +1733,11 @@ function ReportApp({
             </div>
             <div className="legend">
               <span>
-                <i className="legend-ink" />
+                <i className="legend-revenue" />
                 Ingresos
               </span>
               <span>
-                <i className="legend-lime" />
+                <i className="legend-materials" />
                 Materia prima
               </span>
               <span>
