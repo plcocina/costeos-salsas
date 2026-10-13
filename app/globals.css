@@ -1363,13 +1363,13 @@ button {
   height: 8px;
   border-radius: 2px;
 }
-.legend-ink {
-  background: var(--ink);
+.legend-revenue {
+  background: #ec2192;
 }
-.legend-lime {
-  background: #cec861;
+.legend-materials {
+  background: #1796d3;
 }
-.legend-expenses { background: #b88d32; }
+.legend-expenses { background: #93278d; }
 .chart-allocation-note {
   margin: 10px 0 0;
   color: #7d8980;
@@ -1406,7 +1406,7 @@ button {
   font-size: 10px;
   line-height: 1.5;
 }
-.cost-comparison-tooltip .cost-tooltip-expenses { color: #9a5f12; }
+.cost-comparison-tooltip .cost-tooltip-expenses { color: #751d7b; }
 .cost-comparison-tooltip .cost-tooltip-total {
   padding-top: 8px;
   border-top: 1px solid var(--line);
