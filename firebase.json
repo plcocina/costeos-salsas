@@ -1,0 +1,17 @@
+{
+  "hosting": {
+    "target": "salsas",
+    "public": "dist-pages",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  }
+}

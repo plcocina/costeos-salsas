@@ -1,0 +1,14 @@
+{
+  "projects": {
+    "default": "plcocina-apps"
+  },
+  "targets": {
+    "plcocina-apps": {
+      "hosting": {
+        "salsas": [
+          "utilidad-salsas-2026"
+        ]
+      }
+    }
+  }
+}

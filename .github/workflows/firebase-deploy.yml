@@ -1,0 +1,46 @@
+name: Deploy to Firebase Hosting
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build static site
+        run: pnpm run build:pages
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: projects/465339579029/locations/global/workloadIdentityPools/github-plcocina/providers/github-actions
+          service_account: github-firebase-deploy@plcocina-apps.iam.gserviceaccount.com
+
+      - name: Install Firebase CLI
+        run: npm install --global firebase-tools
+
+      - name: Deploy Firebase Hosting target
+        run: firebase deploy --only hosting:salsas --project plcocina-apps --non-interactive
